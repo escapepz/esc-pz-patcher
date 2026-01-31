@@ -32,9 +32,9 @@
 [h3]Security & Trust[/h3]
 [b]Beware:[/b] this runs on your computer as a script/program. Please note that any Java mod or patch from a malicious author can damage your computer.
 [list]
-[*] You must know what you are doing and trust no one.
-[*] The source code is provided for perusal: [url=https://github.com/escapepz/esc-pz-patcher]GitHub Repository[/url] (for the nerds).
-[*] Normal users can use sites like [b]VirusTotal[/b] or anti-virus programs to scan the [b].cmd[/b] (Windows) or [b].sh[/b] (Mac/Linux) files before running. This is normal, healthy behavior.
+[*] [b]Disclaimer:[/b] This tool is provided "as is". Modifying core game files ([b].jar[/b]) carries inherent risks. The author is not responsible for any data loss, save corruption, or system issues. Always ensure you have backups.
+[*] [b]Transparency:[/b] The source code is available for audit: [url=https://github.com/escapepz/esc-pz-patcher]GitHub Repository[/url].
+[*] [b]Stay Safe:[/b] Trust no one—verify the [b].cmd[/b] or [b].sh[/b] files using [b]VirusTotal[/b] or anti-virus programs before running. This is standard safe practice.
 [/list]
 [h3]Security & Trust[/h3]
 [h2]Security & Trust[/h2]
