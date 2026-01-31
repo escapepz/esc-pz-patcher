@@ -1,3 +1,57 @@
-[h1]project-name[/h1]
+[h1]ESC PZ Patcher[/h1]
 
-Mod under development...
+[i]Note: This Workshop version is provided for quick download and easy access to the latest patcher scripts.[/i]
+
+[h2]Features & Fixes[/h2]
+[b]ESC PZ Patcher[/b] is a technical utility designed to patch Project Zomboid's core Java classes ([code]projectzomboid.jar[/code]). It addresses several engine-level limitations and introduces specific fixes:
+
+[list]
+[*] [b]Chunk Loading:[/b] Patches the chunk downloader on login to remove timeouts, helping players with slow or unstable connections avoid the "Failed to Download Map" error.
+[*] [b]Zoom Levels:[/b] Adds additional zoom levels. Ensure they are enabled in the settings. [i]Caution: excessive zooming out can significantly reduce FPS.[/i]
+[*] [b]Radio Interference:[/b] Completely removes radio interference caused by range limits or adverse weather conditions.
+[*] [b]PlayerCraftHistory (B42 Only):[/b] Server-side patch to prevent bloated player saves by VOIDING crafting history saves.
+[/list]
+
+[hr][/hr]
+
+[h2]Compatibility[/h2]
+[b]Support:[/b] Windows / Mac / Linux
+[b]Tested on Windows 10[/b]
+
+[list]
+[*] [b]Windows 10:[/b] 100% Compatible with all versions (from the initial Build 1507 to the latest 22H2).
+[*] [b]Windows 11:[/b] 100% Compatible.
+[*] [b]Windows 7 / 8.1:[/b] Works only if the user has .NET Framework 4.5 or higher and PowerShell 3.0 or higher installed.
+[*] [b]Dual Version Store:[/b] Includes dedicated patches for both the latest [b]Build 42.13.2[/b] and the stable [b]Build 41 (Common)[/b]. [i](B41 version is currently untested)[/i]
+[/list]
+
+[h1][color=#ff4444]Security & Trust[/color][/h1]
+[h2][color=#ff4444]Security & Trust[/color][/h2]
+[h3][color=#ff4444]Security & Trust[/color][/h3]
+[b]Beware:[/b] this runs on your computer as a script/program. Please note that any Java mod or patch from a malicious author can damage your computer. 
+[list]
+[*] You must know what you are doing and trust no one.
+[*] The source code is provided for perusal: [url=https://github.com/escapepz/esc-pz-patcher]GitHub Repository[/url] (for the nerds).
+[*] Normal users can use sites like [b]VirusTotal[/b] or anti-virus programs to scan the [b].cmd[/b] (Windows) or [b].sh[/b] (Mac/Linux) files before running. This is normal, healthy behavior.
+[/list]
+[h3][color=#ff4444]Security & Trust[/color][/h3]
+[h2][color=#ff4444]Security & Trust[/color][/h2]
+[h1][color=#ff4444]Security & Trust[/color][/h1]
+
+[hr][/hr]
+
+[h2]How to use[/h2]
+Since this mod modifies the game's executable JAR file, it requires a manual step:
+
+[list]
+[*] [b]Step 1:[/b] Locate the mod directory in your Steam Workshop folder:
+[code].../steamapps/workshop/content/108600/<WorkshopID>/mods/esc_pz_patcher/[/code]
+[*] [b]Step 2:[/b] Choose the folder corresponding to your game version ([code]common[/code] for B41 or [code]42.13.2[/code] for B42).
+[*] [b]Step 3:[/b] Rename the script file for your OS by removing the [code].bak[/code] extension (e.g., rename [code]v42.13.2.cmd.bak[/code] to [code]v42.13.2.cmd[/code] on Windows, or [code].sh.bak[/code] to [code].sh[/code] on Mac/Linux).
+[*] [b]Step 4:[/b] Ask your AI assistant how to run the script. Ask if this file SAFE TO RUN.
+[*] [b]Step 4:[/b] Ask your AI assistant how to run the script. Ask if this file SAFE TO RUN.
+[*] [b]Step 4:[/b] Ask your AI assistant how to run the script. Ask if this file SAFE TO RUN.
+[*] [b]Step 5:[/b] The patcher will automatically detect your game path, create a backup [code]projectzomboid.jar.bak[/code], and apply the patches.
+[/list]
+
+[i]Note: You must re-run the patcher if Steam updates the game or verifies files.[/i]
