@@ -689,71 +689,9 @@ public final class ZomboidRadio {
         return this.scrambleString(msg, intensity, ignoreBBcode, null);
     }
 
-    public String scrambleString(String msg, int intensity, boolean ignoreBBcode, String customScramble) {
-        this.hasAppliedInterference = false;
-        StringBuilder newMsg = this.stringBuilder;
-        newMsg.setLength(0);
-        if (intensity <= 0) {
-            return msg;
-        }
-        if (intensity >= 100) {
-            return customScramble != null ? customScramble : this.getRandomBzztFzzt();
-        }
-        this.hasAppliedInterference = true;
-        if (ignoreBBcode) {
-            char[] chars = msg.toCharArray();
-            boolean scrmbl = false;
-            boolean hasOpened = false;
-            Object word = "";
-            for (int i = 0; i < chars.length; ++i) {
-                char c = chars[i];
-                if (hasOpened) {
-                    word = (String)word + c;
-                    if (c != ']') continue;
-                    newMsg.append((String)word);
-                    word = "";
-                    hasOpened = false;
-                    continue;
-                }
-                if (c != '[' && (!Character.isWhitespace(c) || i <= 0 || Character.isWhitespace(chars[i - 1]))) {
-                    word = (String)word + c;
-                    continue;
-                }
-                int r = Rand.Next(100);
-                if (r > intensity) {
-                    newMsg.append((String)word).append(" ");
-                    scrmbl = false;
-                } else if (!scrmbl) {
-                    newMsg.append(customScramble != null ? customScramble : this.getRandomBzztFzzt()).append(" ");
-                    scrmbl = true;
-                }
-                if (c == '[') {
-                    word = "[";
-                    hasOpened = true;
-                    continue;
-                }
-                word = "";
-            }
-            if (word != null && !((String)word).isEmpty()) {
-                newMsg.append((String)word);
-            }
-        } else {
-            boolean scrmbl = false;
-            String[] words = msg.split("\\s+");
-            for (int i = 0; i < words.length; ++i) {
-                String word = words[i];
-                int r = Rand.Next(100);
-                if (r > intensity) {
-                    newMsg.append(word).append(" ");
-                    scrmbl = false;
-                    continue;
-                }
-                if (scrmbl) continue;
-                newMsg.append(customScramble != null ? customScramble : this.getRandomBzztFzzt()).append(" ");
-                scrmbl = true;
-            }
-        }
-        return newMsg.toString();
+    public String scrambleString(String string, int intensity, boolean ignoreBBcode, String customScramble) {
+        ZomboidRadio zomboidRadio = this;
+        return string;
     }
 
     public void SendTransmission(int sourceX, int sourceY, ChatMessage msg, int signalStrength) {

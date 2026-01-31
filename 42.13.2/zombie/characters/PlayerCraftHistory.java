@@ -39,16 +39,7 @@ public class PlayerCraftHistory {
     }
 
     public void save(ByteBuffer output) {
-        output.putInt(this.craftHistory.size());
-        for (String key : this.craftHistory.keySet()) {
-            output.putInt(key.length());
-            for (int i = 0; i < key.length(); ++i) {
-                output.putChar(key.charAt(i));
-            }
-            CraftHistoryEntry value = this.craftHistory.get(key);
-            output.putInt(value.getCraftCount());
-            output.putDouble(value.getLastCraftTime());
-        }
+        output.putInt(0);
     }
 
     public void load(ByteBuffer input) {
