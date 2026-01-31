@@ -1,90 +1,123 @@
 package zombie.core.textures;
 
 import java.util.ArrayList;
+import zombie.CombatManager;
 import zombie.GameTime;
 import zombie.IndieGL;
+import zombie.characters.IsoGameCharacter;
 import zombie.characters.IsoPlayer;
 import zombie.core.Core;
 import zombie.core.PerformanceSettings;
+import zombie.core.SceneShaderStore;
 import zombie.core.SpriteRenderer;
-import zombie.core.opengl.Shader;
 import zombie.core.textures.Texture;
 import zombie.core.textures.TextureFBO;
 import zombie.core.utils.ImageUtils;
 import zombie.debug.DebugLog;
-import zombie.interfaces.ITexture;
+import zombie.debug.DebugOptions;
 import zombie.iso.IsoCamera;
 import zombie.iso.IsoGridSquare;
 import zombie.iso.IsoUtils;
 import zombie.iso.PlayerCamera;
 import zombie.iso.sprite.IsoCursor;
+import zombie.iso.sprite.IsoReticle;
 import zombie.network.GameServer;
 import zombie.network.ServerGUI;
-import zombie.util.Type;
 
 public final class MultiTextureFBO2 {
-    private final float[] zoomLevelsDefault = new float[]{2.5f, 2.25f, 2.0f, 1.75f, 1.5f, 1.25f, 1.0f, 0.75f, 0.5f};
+    private final float[] zoomLevelsDefault = new float[]{2.5f, 2.25f, 2.0f, 1.75f, 1.5f, 1.25f, 1.0f, 0.75f, 0.5f, 0.25f};
     private float[] zoomLevels;
-    public TextureFBO Current;
-    public volatile TextureFBO FBOrendered = null;
-    public final float[] zoom = new float[4];
-    public final float[] targetZoom = new float[4];
-    public final float[] startZoom = new float[4];
+    public TextureFBO current;
+    public volatile TextureFBO fboRendered;
+    private final float[] zoom = new float[4];
+    private final float[] targetZoom = new float[4];
+    private final float[] startZoom = new float[4];
     private float zoomedInLevel;
     private float zoomedOutLevel;
-    public final boolean[] bAutoZoom = new boolean[4];
-    public boolean bZoomEnabled = true;
+    public final boolean[] autoZoom = new boolean[4];
+    public boolean zoomEnabled = true;
 
     public MultiTextureFBO2() {
-        for (int i = 0; i < 4; ++i) {
-            this.startZoom[i] = 1.0f;
-            this.targetZoom[i] = 1.0f;
-            this.zoom[i] = 1.0f;
+        for (int n = 0; n < 4; ++n) {
+            this.startZoom[n] = 1.0f;
+            this.targetZoom[n] = 1.0f;
+            this.zoom[n] = 1.0f;
         }
     }
 
-    public int getWidth(int n) {
-        return (int)((float)IsoCamera.getScreenWidth((int)n) * this.zoom[n] * ((float)Core.TileScale / 2.0f));
+    public int getWidth(int playerIndex) {
+        return (int)((float)IsoCamera.getScreenWidth(playerIndex) * this.getDisplayZoom(playerIndex) * ((float)Core.tileScale / 2.0f));
     }
 
-    public int getHeight(int n) {
-        return (int)((float)IsoCamera.getScreenHeight((int)n) * this.zoom[n] * ((float)Core.TileScale / 2.0f));
+    public int getHeight(int playerIndex) {
+        return (int)((float)IsoCamera.getScreenHeight(playerIndex) * this.getDisplayZoom(playerIndex) * ((float)Core.tileScale / 2.0f));
     }
 
-    public void setTargetZoom(int n, float f) {
-        if (this.targetZoom[n] != f) {
-            this.targetZoom[n] = f;
-            this.startZoom[n] = this.zoom[n];
+    public void setZoom(int playerIndex, float value) {
+        this.zoom[playerIndex] = value;
+    }
+
+    public void setZoomAndTargetZoom(int playerIndex, float value) {
+        this.zoom[playerIndex] = value;
+        this.targetZoom[playerIndex] = value;
+    }
+
+    public float getZoom(int playerIndex) {
+        return this.zoom[playerIndex];
+    }
+
+    public float getTargetZoom(int playerIndex) {
+        return this.targetZoom[playerIndex];
+    }
+
+    public float getDisplayZoom(int playerIndex) {
+        if ((float)Core.width > Core.initialWidth) {
+            return this.zoom[playerIndex] * (Core.initialWidth / (float)Core.width);
+        }
+        return this.zoom[playerIndex];
+    }
+
+    public void setTargetZoom(int playerIndex, float target) {
+        if (this.targetZoom[playerIndex] != target) {
+            this.targetZoom[playerIndex] = target;
+            this.startZoom[playerIndex] = this.zoom[playerIndex];
         }
     }
 
     public ArrayList<Integer> getDefaultZoomLevels() {
-        ArrayList<Integer> arrayList = new ArrayList<Integer>();
-        float[] fArray = this.zoomLevelsDefault;
-        for (int i = 0; i < fArray.length; ++i) {
-            arrayList.add(Math.round(fArray[i] * 100.0f));
+        ArrayList<Integer> percents = new ArrayList<Integer>();
+        float[] levels = this.zoomLevelsDefault;
+        for (int i = 0; i < levels.length; ++i) {
+            percents.add(Math.round(levels[i] * 100.0f));
         }
-        return arrayList;
+        return percents;
     }
 
-    public void setZoomLevelsFromOption(String string) {
+    public void setZoomLevels(Double ... zooms) {
+        this.zoomLevels = new float[zooms.length];
+        for (int i = 0; i < zooms.length; ++i) {
+            this.zoomLevels[i] = zooms[i].floatValue();
+        }
+    }
+
+    public void setZoomLevelsFromOption(String levels) {
         this.zoomLevels = this.zoomLevelsDefault;
-        if (string == null || string.isEmpty()) {
+        if (levels == null || levels.isEmpty()) {
             return;
         }
-        String[] stringArray = string.split(";");
-        if (stringArray.length == 0) {
+        String[] ss = levels.split(";");
+        if (ss.length == 0) {
             return;
         }
-        ArrayList<Integer> arrayList = new ArrayList<Integer>();
-        block2: for (String string2 : stringArray) {
-            if (string2.isEmpty()) continue;
+        ArrayList<Integer> percents = new ArrayList<Integer>();
+        block2: for (String s : ss) {
+            if (s.isEmpty()) continue;
             try {
-                int n3 = Integer.parseInt(string2);
-                for (float f : this.zoomLevels) {
-                    if (Math.round(f * 100.0f) != n3) continue;
-                    if (arrayList.contains(n3)) continue block2;
-                    arrayList.add(n3);
+                int percent = Integer.parseInt(s);
+                for (float knownLevel : this.zoomLevels) {
+                    if (Math.round(knownLevel * 100.0f) != percent) continue;
+                    if (percents.contains(percent)) continue block2;
+                    percents.add(percent);
                     continue block2;
                 }
             }
@@ -92,32 +125,32 @@ public final class MultiTextureFBO2 {
                 // empty catch block
             }
         }
-        if (!arrayList.contains(100)) {
-            arrayList.add(100);
+        if (!percents.contains(100)) {
+            percents.add(100);
         }
-        arrayList.sort((n, n2) -> n2 - n);
-        this.zoomLevels = new float[arrayList.size()];
-        for (int i = 0; i < arrayList.size(); ++i) {
-            int n4 = IsoPlayer.getPlayerIndex();
-            this.zoomLevels[i] = Core.getInstance().getOffscreenHeight(n4) > 1440 ? (float)((Integer)arrayList.get(i)).intValue() / 100.0f - 0.25f : (float)((Integer)arrayList.get(i)).intValue() / 100.0f;
+        percents.sort((o1, o2) -> o2 - o1);
+        this.zoomLevels = new float[percents.size()];
+        for (int i = 0; i < percents.size(); ++i) {
+            int playerIndex = IsoPlayer.getPlayerIndex();
+            this.zoomLevels[i] = (float)((Integer)percents.get(i)).intValue() / 100.0f;
         }
     }
 
     public void destroy() {
-        if (this.Current == null) {
+        if (this.current == null) {
             return;
         }
-        this.Current.destroy();
-        this.Current = null;
-        this.FBOrendered = null;
-        for (int i = 0; i < 4; ++i) {
-            this.targetZoom[i] = 1.0f;
-            this.zoom[i] = 1.0f;
+        this.current.destroy();
+        this.current = null;
+        this.fboRendered = null;
+        for (int n = 0; n < 4; ++n) {
+            this.targetZoom[n] = 1.0f;
+            this.zoom[n] = 1.0f;
         }
     }
 
-    public void create(int n, int n2) throws Exception {
-        if (!this.bZoomEnabled) {
+    public void create(int xres, int yres) throws Exception {
+        if (!this.zoomEnabled) {
             return;
         }
         if (this.zoomLevels == null) {
@@ -125,170 +158,179 @@ public final class MultiTextureFBO2 {
         }
         this.zoomedInLevel = this.zoomLevels[this.zoomLevels.length - 1];
         this.zoomedOutLevel = this.zoomLevels[0];
-        int n3 = ImageUtils.getNextPowerOfTwoHW((int)n);
-        int n4 = ImageUtils.getNextPowerOfTwoHW((int)n2);
-        this.Current = this.createTexture(n3, n4, false);
+        int x = ImageUtils.getNextPowerOfTwoHW(xres);
+        int y = ImageUtils.getNextPowerOfTwoHW(yres);
+        this.current = this.createTexture(x, y, false);
     }
 
     public void update() {
-        float f;
-        int n = IsoPlayer.getPlayerIndex();
-        if (!this.bZoomEnabled) {
-            this.targetZoom[n] = 1.0f;
-            this.zoom[n] = 1.0f;
+        int playerIndex = IsoPlayer.getPlayerIndex();
+        if (!this.zoomEnabled) {
+            this.targetZoom[playerIndex] = 1.0f;
+            this.zoom[playerIndex] = 1.0f;
         }
-        if (this.bAutoZoom[n] && IsoCamera.CamCharacter != null && this.bZoomEnabled) {
-            f = IsoUtils.DistanceTo((float)IsoCamera.getRightClickOffX(), (float)IsoCamera.getRightClickOffY(), (float)0.0f, (float)0.0f);
-            float f2 = f / 300.0f;
-            if (f2 > 1.0f) {
-                f2 = 1.0f;
+        IsoGameCharacter isoGameCharacter = IsoCamera.getCameraCharacter();
+        if (this.autoZoom[playerIndex] && isoGameCharacter != null && this.zoomEnabled) {
+            float dist = IsoUtils.DistanceTo(IsoCamera.getRightClickOffX(), IsoCamera.getRightClickOffY(), 0.0f, 0.0f);
+            float delta = dist / 300.0f;
+            if (delta > 1.0f) {
+                delta = 1.0f;
             }
-            float f3 = this.shouldAutoZoomIn() ? this.zoomedInLevel : this.zoomedOutLevel;
-            if ((f3 += f2) > this.zoomLevels[0]) {
-                f3 = this.zoomLevels[0];
+            float zoom = this.shouldAutoZoomIn() ? this.zoomedInLevel : this.zoomedOutLevel;
+            if ((zoom += delta) > this.zoomLevels[0]) {
+                zoom = this.zoomLevels[0];
             }
-            if (IsoCamera.CamCharacter.getVehicle() != null) {
-                f3 = this.getMaxZoom();
+            if (isoGameCharacter.getVehicle() != null) {
+                zoom = this.getMaxZoom();
             }
-            this.setTargetZoom(n, f3);
+            this.setTargetZoom(playerIndex, zoom);
         }
-        f = 0.004f * GameTime.instance.getMultiplier() / GameTime.instance.getTrueMultiplier() * (Core.TileScale == 2 ? 1.5f : 1.5f);
-        if (!this.bAutoZoom[n]) {
-            f *= 5.0f;
-        } else if (this.targetZoom[n] > this.zoom[n]) {
-            f *= 1.0f;
+        float step = 0.004f * GameTime.instance.getMultiplier() / GameTime.instance.getTrueMultiplier() * (Core.tileScale == 2 ? 1.5f : 1.5f);
+        if (!this.autoZoom[playerIndex]) {
+            step *= 5.0f;
+        } else if (this.targetZoom[playerIndex] > this.zoom[playerIndex]) {
+            step *= 1.0f;
         }
-        if (this.targetZoom[n] > this.zoom[n]) {
-            int n2 = n;
-            this.zoom[n2] = this.zoom[n2] + f;
-            IsoPlayer.players[n].dirtyRecalcGridStackTime = 2.0f;
-            if (this.zoom[n] > this.targetZoom[n] || Math.abs(this.zoom[n] - this.targetZoom[n]) < 0.001f) {
-                this.zoom[n] = this.targetZoom[n];
+        if (this.targetZoom[playerIndex] > this.zoom[playerIndex]) {
+            int n = playerIndex;
+            this.zoom[n] = this.zoom[n] + step;
+            IsoPlayer.players[playerIndex].dirtyRecalcGridStackTime = 2.0f;
+            if (this.zoom[playerIndex] > this.targetZoom[playerIndex] || Math.abs(this.zoom[playerIndex] - this.targetZoom[playerIndex]) < 0.001f) {
+                this.zoom[playerIndex] = this.targetZoom[playerIndex];
             }
         }
-        if (this.targetZoom[n] < this.zoom[n]) {
-            int n3 = n;
-            this.zoom[n3] = this.zoom[n3] - f;
-            IsoPlayer.players[n].dirtyRecalcGridStackTime = 2.0f;
-            if (this.zoom[n] < this.targetZoom[n] || Math.abs(this.zoom[n] - this.targetZoom[n]) < 0.001f) {
-                this.zoom[n] = this.targetZoom[n];
+        if (this.targetZoom[playerIndex] < this.zoom[playerIndex]) {
+            int n = playerIndex;
+            this.zoom[n] = this.zoom[n] - step;
+            IsoPlayer.players[playerIndex].dirtyRecalcGridStackTime = 2.0f;
+            if (this.zoom[playerIndex] < this.targetZoom[playerIndex] || Math.abs(this.zoom[playerIndex] - this.targetZoom[playerIndex]) < 0.001f) {
+                this.zoom[playerIndex] = this.targetZoom[playerIndex];
             }
         }
         this.setCameraToCentre();
     }
 
     private boolean shouldAutoZoomIn() {
-        if (IsoCamera.CamCharacter == null) {
+        IsoGameCharacter isoGameCharacter = IsoCamera.getCameraCharacter();
+        if (isoGameCharacter == null) {
             return false;
         }
-        IsoGridSquare isoGridSquare = IsoCamera.CamCharacter.getCurrentSquare();
-        if (isoGridSquare != null && !isoGridSquare.isOutside()) {
+        IsoGridSquare square = isoGameCharacter.getCurrentSquare();
+        if (square != null && !square.isOutside()) {
             return true;
         }
-        IsoPlayer isoPlayer = (IsoPlayer)Type.tryCastTo((Object)IsoCamera.CamCharacter, IsoPlayer.class);
-        if (isoPlayer == null) {
+        if (!(isoGameCharacter instanceof IsoPlayer)) {
             return false;
         }
-        if (isoPlayer.isRunning() || isoPlayer.isSprinting()) {
+        IsoPlayer player = (IsoPlayer)isoGameCharacter;
+        if (player.isRunning() || player.isSprinting()) {
             return false;
         }
-        if (isoPlayer.closestZombie < 6.0f && isoPlayer.isTargetedByZombie()) {
+        if (player.closestZombie < 6.0f && player.isTargetedByZombie()) {
             return true;
         }
-        return isoPlayer.lastTargeted < (float)(PerformanceSettings.getLockFPS() * 4);
+        return player.lastTargeted < (float)(PerformanceSettings.getLockFPS() * 4);
     }
 
     private void setCameraToCentre() {
-        PlayerCamera playerCamera = IsoCamera.cameras[IsoPlayer.getPlayerIndex()];
-        playerCamera.center();
+        PlayerCamera camera = IsoCamera.cameras[IsoPlayer.getPlayerIndex()];
+        camera.center();
     }
 
-    private TextureFBO createTexture(int n, int n2, boolean bl) {
-        if (bl) {
-            Texture texture = new Texture(n, n2, 16);
-            TextureFBO textureFBO = new TextureFBO((ITexture)texture);
-            textureFBO.destroy();
+    private TextureFBO createTexture(int x, int y, boolean test) {
+        if (test) {
+            Texture tex = new Texture(x, y, 16);
+            TextureFBO newOne = new TextureFBO(tex);
+            newOne.destroy();
             return null;
         }
-        Texture texture = new Texture(n, n2, 19);
-        return new TextureFBO((ITexture)texture);
+        Texture tex = new Texture(x, y, 19);
+        return new TextureFBO(tex);
     }
 
     public void render() {
-        int n;
-        if (this.Current == null) {
+        int playerIndex;
+        if (this.current == null) {
             return;
         }
-        int n2 = 0;
-        for (n = 3; n >= 0; --n) {
-            if (IsoPlayer.players[n] == null) continue;
-            n2 = n > 1 ? 3 : n;
+        int max = 0;
+        for (playerIndex = 3; playerIndex >= 0; --playerIndex) {
+            if (IsoPlayer.players[playerIndex] == null) continue;
+            max = playerIndex > 1 ? 3 : playerIndex;
             break;
         }
-        n2 = Math.max(n2, IsoPlayer.numPlayers - 1);
-        for (n = 0; n <= n2; ++n) {
-            if (Core.getInstance().RenderShader != null) {
-                IndieGL.StartShader((Shader)Core.getInstance().RenderShader, (int)n);
+        max = Math.max(max, IsoPlayer.numPlayers - 1);
+        for (playerIndex = 0; playerIndex <= max; ++playerIndex) {
+            if (SceneShaderStore.weatherShader != null && DebugOptions.instance.fboRenderChunk.useWeatherShader.getValue()) {
+                IndieGL.StartShader(SceneShaderStore.weatherShader, playerIndex);
             }
-            int n3 = IsoCamera.getScreenLeft((int)n);
-            int n4 = IsoCamera.getScreenTop((int)n);
-            int n5 = IsoCamera.getScreenWidth((int)n);
-            int n6 = IsoCamera.getScreenHeight((int)n);
-            if (!(IsoPlayer.players[n] != null || GameServer.bServer && ServerGUI.isCreated())) {
-                SpriteRenderer.instance.renderi(null, n3, n4, n5, n6, 0.0f, 0.0f, 0.0f, 1.0f, null);
+            int sx = IsoCamera.getScreenLeft(playerIndex);
+            int sy = IsoCamera.getScreenTop(playerIndex);
+            int sw = IsoCamera.getScreenWidth(playerIndex);
+            int sh = IsoCamera.getScreenHeight(playerIndex);
+            if (!(IsoPlayer.players[playerIndex] != null || GameServer.server && ServerGUI.isCreated())) {
+                SpriteRenderer.instance.renderi(null, sx, sy, sw, sh, 0.0f, 0.0f, 0.0f, 1.0f, null);
                 continue;
             }
-            ((Texture)this.Current.getTexture()).rendershader2((float)n3, (float)n4, (float)n5, (float)n6, n3, n4, n5, n6, 1.0f, 1.0f, 1.0f, 1.0f);
+            ((Texture)this.current.getTexture()).rendershader2(sx, sy, sw, sh, sx, sy, sw, sh, 1.0f, 1.0f, 1.0f, 1.0f);
         }
-        if (Core.getInstance().RenderShader != null) {
+        if (SceneShaderStore.weatherShader != null) {
             IndieGL.EndShader();
         }
-        IsoCursor.getInstance().render(0);
+        switch (CombatManager.targetReticleMode) {
+            case 1: {
+                IsoReticle.getInstance().render(0);
+                break;
+            }
+            default: {
+                IsoCursor.getInstance().render(0);
+            }
+        }
     }
 
-    public TextureFBO getCurrent(int n) {
-        return this.Current;
+    public TextureFBO getCurrent(int nPlayer) {
+        return this.current;
     }
 
-    public Texture getTexture(int n) {
-        return (Texture)this.Current.getTexture();
+    public Texture getTexture(int nPlayer) {
+        return (Texture)this.current.getTexture();
     }
 
-    public void doZoomScroll(int n, int n2) {
-        this.targetZoom[n] = this.getNextZoom(n, n2);
+    public void doZoomScroll(int playerIndex, int del) {
+        this.targetZoom[playerIndex] = this.getNextZoom(playerIndex, del);
     }
 
-    public float getNextZoom(int n, int n2) {
+    public float getNextZoom(int playerIndex, int del) {
         block4: {
             block3: {
-                if (!this.bZoomEnabled || this.zoomLevels == null) {
+                if (!this.zoomEnabled || this.zoomLevels == null) {
                     return 1.0f;
                 }
-                if (n2 <= 0) break block3;
+                if (del <= 0) break block3;
                 for (int i = this.zoomLevels.length - 1; i > 0; --i) {
-                    if (this.targetZoom[n] != this.zoomLevels[i]) continue;
+                    if (this.targetZoom[playerIndex] != this.zoomLevels[i]) continue;
                     return this.zoomLevels[i - 1];
                 }
                 break block4;
             }
-            if (n2 >= 0) break block4;
+            if (del >= 0) break block4;
             for (int i = 0; i < this.zoomLevels.length - 1; ++i) {
-                if (this.targetZoom[n] != this.zoomLevels[i]) continue;
+                if (this.targetZoom[playerIndex] != this.zoomLevels[i]) continue;
                 return this.zoomLevels[i + 1];
             }
         }
-        return this.targetZoom[n];
+        return this.targetZoom[playerIndex];
     }
 
     public float getMinZoom() {
-        if (!this.bZoomEnabled || this.zoomLevels == null || this.zoomLevels.length == 0) {
+        if (!this.zoomEnabled || this.zoomLevels == null || this.zoomLevels.length == 0) {
             return 1.0f;
         }
         return this.zoomLevels[this.zoomLevels.length - 1];
     }
 
     public float getMaxZoom() {
-        if (!this.bZoomEnabled || this.zoomLevels == null || this.zoomLevels.length == 0) {
+        if (!this.zoomEnabled || this.zoomLevels == null || this.zoomLevels.length == 0) {
             return 1.0f;
         }
         return this.zoomLevels[0];
@@ -298,10 +340,10 @@ public final class MultiTextureFBO2 {
         try {
             this.createTexture(16, 16, true);
         }
-        catch (Exception exception) {
-            DebugLog.General.error((Object)"Failed to create Test FBO");
-            exception.printStackTrace();
-            Core.SafeMode = true;
+        catch (Exception ex) {
+            DebugLog.General.error("Failed to create Test FBO");
+            ex.printStackTrace();
+            Core.safeMode = true;
             return false;
         }
         return true;

@@ -7,8 +7,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.Writer;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,16 +15,19 @@ import zombie.GameTime;
 import zombie.GameWindow;
 import zombie.Lua.LuaEventManager;
 import zombie.SandboxOptions;
+import zombie.UsedFromLua;
 import zombie.ZomboidFileSystem;
 import zombie.characters.IsoPlayer;
+import zombie.characters.Roles;
 import zombie.chat.ChatElement;
 import zombie.chat.ChatMessage;
 import zombie.core.Color;
 import zombie.core.Core;
-import zombie.core.Rand;
 import zombie.core.logger.ExceptionLogger;
+import zombie.core.math.PZMath;
 import zombie.core.network.ByteBufferWriter;
 import zombie.core.raknet.VoiceManagerData;
+import zombie.core.random.Rand;
 import zombie.debug.DebugLog;
 import zombie.debug.DebugType;
 import zombie.inventory.types.Radio;
@@ -39,7 +40,6 @@ import zombie.radio.RadioAPI;
 import zombie.radio.RadioData;
 import zombie.radio.RadioDebugConsole;
 import zombie.radio.StorySounds.SLSoundManager;
-import zombie.radio.ZomboidRadio;
 import zombie.radio.devices.DeviceData;
 import zombie.radio.devices.WaveSignalDevice;
 import zombie.radio.media.RecordedMedia;
@@ -47,36 +47,37 @@ import zombie.radio.scripting.RadioChannel;
 import zombie.radio.scripting.RadioScript;
 import zombie.radio.scripting.RadioScriptManager;
 
+@UsedFromLua
 public final class ZomboidRadio {
     public static final String SAVE_FILE = "RADIO_SAVE.txt";
     private final ArrayList<WaveSignalDevice> devices = new ArrayList();
     private final ArrayList<WaveSignalDevice> broadcastDevices = new ArrayList();
     private RadioScriptManager scriptManager;
-    private int DaysSinceStart = 0;
+    private int daysSinceStart;
     private int lastRecordedHour;
     private final String[] playerLastLine = new String[4];
     private final Map<Integer, String> channelNames = new HashMap<Integer, String>();
     private final Map<String, Map<Integer, String>> categorizedChannels = new HashMap<String, Map<Integer, String>>();
     private final List<Integer> knownFrequencies = new ArrayList<Integer>();
     private RadioDebugConsole debugConsole;
-    private boolean hasRecievedServerData = false;
-    private SLSoundManager storySoundManager = null;
+    private boolean hasRecievedServerData;
+    private final SLSoundManager storySoundManager = null;
     private static final String[] staticSounds = new String[]{"<bzzt>", "<fzzt>", "<wzzt>", "<szzt>"};
-    public static boolean DEBUG_MODE = false;
-    public static boolean DEBUG_XML = false;
-    public static boolean DEBUG_SOUND = false;
-    public static boolean POST_RADIO_SILENCE = false;
-    public static boolean DISABLE_BROADCASTING = false;
+    public static final boolean DEBUG_MODE = false;
+    public static final boolean DEBUG_XML = false;
+    public static final boolean DEBUG_SOUND = false;
+    public static boolean postRadioSilence;
+    public static boolean disableBroadcasting;
     private static ZomboidRadio instance;
     private static RecordedMedia recordedMedia;
-    public static boolean LOUISVILLE_OBFUSCATION;
+    public static boolean louisvilleObfuscation;
     private String lastSaveFile;
     private String lastSaveContent;
-    private HashMap<Integer, FreqListEntry> freqlist = new HashMap();
-    private boolean hasAppliedRangeDistortion = false;
-    private StringBuilder stringBuilder = new StringBuilder();
-    private boolean hasAppliedInterference = false;
-    private static int[] obfuscateChannels;
+    private final HashMap<Integer, FreqListEntry> freqlist = new HashMap();
+    private boolean hasAppliedRangeDistortion;
+    private final StringBuilder stringBuilder = new StringBuilder();
+    private boolean hasAppliedInterference;
+    private static final int[] obfuscateChannels;
 
     public static boolean hasInstance() {
         return instance != null;
@@ -91,18 +92,18 @@ public final class ZomboidRadio {
 
     private ZomboidRadio() {
         this.lastRecordedHour = GameTime.instance.getHour();
-        SLSoundManager.DEBUG = DEBUG_SOUND;
+        SLSoundManager.debug = false;
         for (int i = 0; i < staticSounds.length; ++i) {
-            ChatElement.addNoLogText((String)staticSounds[i]);
+            ChatElement.addNoLogText(staticSounds[i]);
         }
-        ChatElement.addNoLogText((String)"~");
+        ChatElement.addNoLogText("~");
         recordedMedia = new RecordedMedia();
     }
 
-    public static boolean isStaticSound(String string) {
-        if (string != null) {
-            for (String string2 : staticSounds) {
-                if (!string.equals(string2)) continue;
+    public static boolean isStaticSound(String str) {
+        if (str != null) {
+            for (String s : staticSounds) {
+                if (!str.equals(s)) continue;
                 return true;
             }
         }
@@ -114,7 +115,7 @@ public final class ZomboidRadio {
     }
 
     public int getDaysSinceStart() {
-        return this.DaysSinceStart;
+        return this.daysSinceStart;
     }
 
     public ArrayList<WaveSignalDevice> getDevices() {
@@ -125,45 +126,45 @@ public final class ZomboidRadio {
         return this.broadcastDevices;
     }
 
-    public void setHasRecievedServerData(boolean bl) {
-        this.hasRecievedServerData = bl;
+    public void setHasRecievedServerData(boolean state) {
+        this.hasRecievedServerData = state;
     }
 
-    public void addChannelName(String string, int n, String string2) {
-        this.addChannelName(string, n, string2, true);
+    public void addChannelName(String name, int frequency, String category) {
+        this.addChannelName(name, frequency, category, true);
     }
 
-    public void addChannelName(String string, int n, String string2, boolean bl) {
-        if (bl || !this.channelNames.containsKey(n)) {
-            if (!this.categorizedChannels.containsKey(string2)) {
-                this.categorizedChannels.put(string2, new HashMap());
+    public void addChannelName(String name, int frequency, String category, boolean overwrite) {
+        if (overwrite || !this.channelNames.containsKey(frequency)) {
+            if (!this.categorizedChannels.containsKey(category)) {
+                this.categorizedChannels.put(category, new HashMap());
             }
-            this.categorizedChannels.get(string2).put(n, string);
-            this.channelNames.put(n, string);
-            this.knownFrequencies.add(n);
+            this.categorizedChannels.get(category).put(frequency, name);
+            this.channelNames.put(frequency, name);
+            this.knownFrequencies.add(frequency);
         }
     }
 
-    public void removeChannelName(int n) {
-        if (this.channelNames.containsKey(n)) {
-            this.channelNames.remove(n);
-            for (Map.Entry<String, Map<Integer, String>> entry : this.categorizedChannels.entrySet()) {
-                if (!entry.getValue().containsKey(n)) continue;
-                entry.getValue().remove(n);
+    public void removeChannelName(int frequency) {
+        if (this.channelNames.containsKey(frequency)) {
+            this.channelNames.remove(frequency);
+            for (Map.Entry<String, Map<Integer, String>> Entry2 : this.categorizedChannels.entrySet()) {
+                if (!Entry2.getValue().containsKey(frequency)) continue;
+                Entry2.getValue().remove(frequency);
             }
         }
     }
 
-    public Map<Integer, String> GetChannelList(String string) {
-        if (this.categorizedChannels.containsKey(string)) {
-            return this.categorizedChannels.get(string);
+    public Map<Integer, String> GetChannelList(String category) {
+        if (this.categorizedChannels.containsKey(category)) {
+            return this.categorizedChannels.get(category);
         }
         return null;
     }
 
-    public String getChannelName(int n) {
-        if (this.channelNames.containsKey(n)) {
-            return this.channelNames.get(n);
+    public String getChannelName(int frequency) {
+        if (this.channelNames.containsKey(frequency)) {
+            return this.channelNames.get(frequency);
         }
         return null;
     }
@@ -172,51 +173,47 @@ public final class ZomboidRadio {
         return this.getRandomFrequency(88000, 108000);
     }
 
-    public int getRandomFrequency(int n, int n2) {
-        int n3 = 91100;
+    public int getRandomFrequency(int rangemin, int rangemax) {
+        int freq = 91100;
         do {
-            n3 = Rand.Next((int)n, (int)n2);
-            n3 /= 200;
-        } while (this.knownFrequencies.contains(n3 *= 200));
-        return n3;
+            freq = Rand.Next(rangemin, rangemax);
+            freq /= 200;
+        } while (this.knownFrequencies.contains(freq *= 200));
+        return freq;
     }
 
     public Map<String, Map<Integer, String>> getFullChannelList() {
         return this.categorizedChannels;
     }
 
-    public void WriteRadioServerDataPacket(ByteBufferWriter byteBufferWriter) {
-        byteBufferWriter.putInt(this.categorizedChannels.size());
-        for (Map.Entry<String, Map<Integer, String>> entry : this.categorizedChannels.entrySet()) {
-            GameWindow.WriteString((ByteBuffer)byteBufferWriter.bb, (String)entry.getKey());
-            byteBufferWriter.putInt(entry.getValue().size());
-            for (Map.Entry<Integer, String> entry2 : entry.getValue().entrySet()) {
-                byteBufferWriter.putInt(entry2.getKey().intValue());
-                GameWindow.WriteString((ByteBuffer)byteBufferWriter.bb, (String)entry2.getValue());
+    public void WriteRadioServerDataPacket(ByteBufferWriter bb) {
+        bb.putInt(this.categorizedChannels.size());
+        for (Map.Entry<String, Map<Integer, String>> Entry2 : this.categorizedChannels.entrySet()) {
+            GameWindow.WriteString(bb.bb, Entry2.getKey());
+            bb.putInt(Entry2.getValue().size());
+            for (Map.Entry<Integer, String> Entry22 : Entry2.getValue().entrySet()) {
+                bb.putInt(Entry22.getKey());
+                GameWindow.WriteString(bb.bb, Entry22.getValue());
             }
         }
-        byteBufferWriter.putByte(POST_RADIO_SILENCE ? (byte)1 : 0);
+        bb.putByte(postRadioSilence ? (byte)1 : 0);
     }
 
-    public void Init(int n) {
-        POST_RADIO_SILENCE = false;
-        boolean bl = false;
-        boolean bl2 = DebugLog.isEnabled((DebugType)DebugType.Radio);
-        if (bl2) {
-            DebugLog.Radio.println("");
+    public void Init(int savedWorldVersion) {
+        postRadioSilence = false;
+        boolean success = false;
+        boolean bDebugEnabled = DebugLog.isEnabled(DebugType.Radio);
+        if (bDebugEnabled) {
+            DebugLog.Radio.println();
             DebugLog.Radio.println("################## Radio Init ##################");
         }
         RadioAPI.getInstance();
         recordedMedia.init();
         this.lastRecordedHour = GameTime.instance.getHour();
-        GameMode gameMode = this.getGameMode();
-        if (DEBUG_MODE && !gameMode.equals((Object)GameMode.Server)) {
-            DebugLog.setLogEnabled((DebugType)DebugType.Radio, (boolean)true);
-            this.debugConsole = new RadioDebugConsole();
-        }
-        if (gameMode.equals((Object)GameMode.Client)) {
+        GameMode mode = this.getGameMode();
+        if (mode == GameMode.Client) {
             GameClient.sendRadioServerDataRequest();
-            if (bl2) {
+            if (bDebugEnabled) {
                 DebugLog.Radio.println("Radio (Client) loaded.");
                 DebugLog.Radio.println("################################################");
             }
@@ -224,155 +221,147 @@ public final class ZomboidRadio {
             return;
         }
         this.scriptManager = RadioScriptManager.getInstance();
-        this.scriptManager.init(n);
+        this.scriptManager.init(savedWorldVersion);
         try {
             if (!Core.getInstance().isNoSave()) {
                 ZomboidFileSystem.instance.getFileInCurrentSave("radio", "data").mkdirs();
             }
-            ArrayList arrayList = RadioData.fetchAllRadioData();
-            for (RadioData radioData : arrayList) {
-                for (RadioChannel radioChannel : radioData.getRadioChannels()) {
-                    ZomboidRadio.ObfuscateChannelCheck(radioChannel);
-                    RadioChannel radioChannel2 = null;
-                    if (this.scriptManager.getChannels().containsKey(radioChannel.GetFrequency())) {
-                        radioChannel2 = (RadioChannel)this.scriptManager.getChannels().get(radioChannel.GetFrequency());
+            ArrayList<RadioData> radioDataList = RadioData.fetchAllRadioData();
+            for (RadioData radioData : radioDataList) {
+                for (RadioChannel channel : radioData.getRadioChannels()) {
+                    ZomboidRadio.ObfuscateChannelCheck(channel);
+                    RadioChannel found = null;
+                    if (this.scriptManager.getChannels().containsKey(channel.GetFrequency())) {
+                        found = this.scriptManager.getChannels().get(channel.GetFrequency());
                     }
-                    if (radioChannel2 == null || radioChannel2.getRadioData().isVanilla() && !radioChannel.getRadioData().isVanilla()) {
-                        this.scriptManager.AddChannel(radioChannel, true);
+                    if (found == null || found.getRadioData().isVanilla() && !channel.getRadioData().isVanilla()) {
+                        this.scriptManager.AddChannel(channel, true);
                         continue;
                     }
-                    if (!bl2) continue;
-                    DebugLog.Radio.println("Unable to add channel: " + radioChannel.GetName() + ", frequency '" + radioChannel.GetFrequency() + "' taken.");
+                    if (!bDebugEnabled) continue;
+                    DebugLog.Radio.println("Unable to add channel: " + channel.GetName() + ", frequency '" + channel.GetFrequency() + "' taken.");
                 }
             }
-            LuaEventManager.triggerEvent((String)"OnLoadRadioScripts", (Object)this.scriptManager, (Object)(n == -1 ? 1 : 0));
-            if (n == -1) {
-                if (bl2) {
+            LuaEventManager.triggerEvent("OnLoadRadioScripts", this.scriptManager, savedWorldVersion == -1);
+            if (savedWorldVersion == -1) {
+                if (bDebugEnabled) {
                     DebugLog.Radio.println("Radio setting new game start times");
                 }
-                SandboxOptions sandboxOptions = SandboxOptions.instance;
-                int n2 = sandboxOptions.TimeSinceApo.getValue() - 1;
-                if (n2 < 0) {
-                    n2 = 0;
+                SandboxOptions options = SandboxOptions.instance;
+                int months = options.timeSinceApo.getValue() - 1;
+                if (months < 0) {
+                    months = 0;
                 }
-                if (bl2) {
-                    DebugLog.log((DebugType)DebugType.Radio, (String)("Time since the apocalypse: " + sandboxOptions.TimeSinceApo.getValue()));
+                if (bDebugEnabled) {
+                    DebugLog.log(DebugType.Radio, "Time since the apocalypse: " + options.timeSinceApo.getValue());
                 }
-                if (n2 > 0) {
-                    this.DaysSinceStart = (int)((float)n2 * 30.5f);
-                    if (bl2) {
-                        DebugLog.Radio.println("Time since the apocalypse in days: " + this.DaysSinceStart);
+                if (months > 0) {
+                    this.daysSinceStart = (int)((float)months * 30.5f);
+                    if (bDebugEnabled) {
+                        DebugLog.Radio.println("Time since the apocalypse in days: " + this.daysSinceStart);
                     }
-                    this.scriptManager.simulateScriptsUntil(this.DaysSinceStart, true);
+                    this.scriptManager.simulateScriptsUntil(this.daysSinceStart, true);
                 }
                 this.checkGameModeSpecificStart();
             } else {
-                boolean bl3 = this.Load();
-                if (!bl3) {
-                    RadioData radioData;
-                    radioData = SandboxOptions.instance;
-                    int n3 = radioData.TimeSinceApo.getValue() - 1;
-                    if (n3 < 0) {
-                        n3 = 0;
+                boolean isLoaded = this.Load();
+                if (!isLoaded) {
+                    SandboxOptions options = SandboxOptions.instance;
+                    int months = options.timeSinceApo.getValue() - 1;
+                    if (months < 0) {
+                        months = 0;
                     }
-                    this.DaysSinceStart = (int)((float)n3 * 30.5f);
-                    this.DaysSinceStart += GameTime.instance.getNightsSurvived();
+                    this.daysSinceStart = (int)((float)months * 30.5f);
+                    this.daysSinceStart += GameTime.instance.getNightsSurvived();
                 }
-                if (this.DaysSinceStart > 0) {
-                    this.scriptManager.simulateScriptsUntil(this.DaysSinceStart, false);
+                if (this.daysSinceStart > 0) {
+                    this.scriptManager.simulateScriptsUntil(this.daysSinceStart, false);
                 }
             }
-            bl = true;
+            success = true;
         }
-        catch (Exception exception) {
-            ExceptionLogger.logException((Throwable)exception);
+        catch (Exception e) {
+            ExceptionLogger.logException(e);
         }
-        if (!bl2) {
+        if (!bDebugEnabled) {
             return;
         }
-        if (bl) {
+        if (success) {
             DebugLog.Radio.println("Radio loaded.");
         }
         DebugLog.Radio.println("################################################");
-        DebugLog.Radio.println("");
+        DebugLog.Radio.println();
     }
 
     private void checkGameModeSpecificStart() {
         block5: {
             block4: {
-                if (!Core.GameMode.equals("Initial Infection")) break block4;
-                for (Map.Entry entry : this.scriptManager.getChannels().entrySet()) {
-                    RadioScript radioScript = ((RadioChannel)entry.getValue()).getRadioScript("init_infection");
-                    if (radioScript != null) {
-                        radioScript.clearExitOptions();
-                        radioScript.AddExitOption(((RadioChannel)entry.getValue()).getCurrentScript().GetName(), 100, 0);
-                        ((RadioChannel)entry.getValue()).setActiveScript("init_infection", this.DaysSinceStart);
+                if (!Core.gameMode.equals("Initial Infection")) break block4;
+                for (Map.Entry<Integer, RadioChannel> entry : this.scriptManager.getChannels().entrySet()) {
+                    RadioScript initInfectionScript = entry.getValue().getRadioScript("init_infection");
+                    if (initInfectionScript != null) {
+                        initInfectionScript.clearExitOptions();
+                        initInfectionScript.AddExitOption(entry.getValue().getCurrentScript().GetName(), 100, 0);
+                        entry.getValue().setActiveScript("init_infection", this.daysSinceStart);
                         continue;
                     }
-                    ((RadioChannel)entry.getValue()).getCurrentScript().setStartDayStamp(this.DaysSinceStart + 1);
+                    entry.getValue().getCurrentScript().setStartDayStamp(this.daysSinceStart + 1);
                 }
                 break block5;
             }
-            if (!Core.GameMode.equals("Six Months Later")) break block5;
-            for (Map.Entry entry : this.scriptManager.getChannels().entrySet()) {
-                if (((RadioChannel)entry.getValue()).GetName().equals("Classified M1A1")) {
-                    ((RadioChannel)entry.getValue()).setActiveScript("numbers", this.DaysSinceStart);
+            if (!Core.gameMode.equals("Six Months Later")) break block5;
+            for (Map.Entry<Integer, RadioChannel> entry : this.scriptManager.getChannels().entrySet()) {
+                if (entry.getValue().GetName().equals("Classified M1A1")) {
+                    entry.getValue().setActiveScript("numbers", this.daysSinceStart);
                     continue;
                 }
-                if (!((RadioChannel)entry.getValue()).GetName().equals("NNR Radio")) continue;
-                ((RadioChannel)entry.getValue()).setActiveScript("pastor", this.DaysSinceStart);
+                if (!entry.getValue().GetName().equals("NNR Radio")) continue;
+                entry.getValue().setActiveScript("pastor", this.daysSinceStart);
             }
         }
     }
 
     public void Save() throws FileNotFoundException, IOException {
-        File file;
+        File path;
         if (Core.getInstance().isNoSave()) {
             return;
         }
-        GameMode gameMode = this.getGameMode();
-        if ((gameMode.equals((Object)GameMode.Server) || gameMode.equals((Object)GameMode.SinglePlayer)) && this.scriptManager != null && (file = ZomboidFileSystem.instance.getFileInCurrentSave("radio", "data")).exists() && file.isDirectory()) {
-            String string;
-            Object object;
-            String string2 = ZomboidFileSystem.instance.getFileNameInCurrentSave("radio", "data", SAVE_FILE);
-            try {
-                object = new StringWriter(1024);
-                try {
-                    ((StringWriter)object).write("DaysSinceStart = " + this.DaysSinceStart + System.lineSeparator());
-                    ((StringWriter)object).write("LvObfuscation = " + LOUISVILLE_OBFUSCATION + System.lineSeparator());
-                    this.scriptManager.Save((Writer)object);
-                    string = ((StringWriter)object).toString();
-                }
-                finally {
-                    ((StringWriter)object).close();
-                }
+        GameMode mode = this.getGameMode();
+        if ((mode == GameMode.Server || mode == GameMode.SinglePlayer) && this.scriptManager != null && (path = ZomboidFileSystem.instance.getFileInCurrentSave("radio", "data")).exists() && path.isDirectory()) {
+            String content;
+            String fileName = ZomboidFileSystem.instance.getFileNameInCurrentSave("radio", "data", SAVE_FILE);
+            try (StringWriter w = new StringWriter(1024);){
+                w.write("DaysSinceStart = " + this.daysSinceStart + System.lineSeparator());
+                w.write("LvObfuscation = " + louisvilleObfuscation + System.lineSeparator());
+                this.scriptManager.Save(w);
+                content = w.toString();
             }
-            catch (IOException iOException) {
-                ExceptionLogger.logException((Throwable)iOException);
+            catch (IOException ex) {
+                ExceptionLogger.logException(ex);
                 return;
             }
-            if (string2.equals(this.lastSaveFile) && string.equals(this.lastSaveContent)) {
+            if (fileName.equals(this.lastSaveFile) && content.equals(this.lastSaveContent)) {
                 return;
             }
-            this.lastSaveFile = string2;
-            this.lastSaveContent = string;
-            object = new File(string2);
-            if (DebugLog.isEnabled((DebugType)DebugType.Radio)) {
-                DebugLog.Radio.println("Saving radio: " + string2);
+            this.lastSaveFile = fileName;
+            this.lastSaveContent = content;
+            File f = new File(fileName);
+            if (DebugLog.isEnabled(DebugType.Radio)) {
+                DebugLog.Radio.println("Saving radio: " + fileName);
             }
-            try (FileWriter fileWriter = new FileWriter((File)object, false);){
-                fileWriter.write(string);
+            try (FileWriter w = new FileWriter(f, false);){
+                w.write(content);
             }
-            catch (Exception exception) {
-                ExceptionLogger.logException((Throwable)exception);
+            catch (Exception ex) {
+                ExceptionLogger.logException(ex);
             }
         }
         if (recordedMedia != null) {
             try {
                 recordedMedia.save();
             }
-            catch (Exception exception) {
-                exception.printStackTrace();
+            catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -381,57 +370,57 @@ public final class ZomboidRadio {
      * WARNING - Removed try catching itself - possible behaviour change.
      */
     public boolean Load() throws FileNotFoundException, IOException {
-        boolean bl = false;
-        GameMode gameMode = this.getGameMode();
-        if (gameMode.equals((Object)GameMode.Server) || gameMode.equals((Object)GameMode.SinglePlayer)) {
-            for (Map.Entry object2 : this.scriptManager.getChannels().entrySet()) {
-                ((RadioChannel)object2.getValue()).setActiveScriptNull();
+        boolean result = false;
+        GameMode mode = this.getGameMode();
+        if (mode == GameMode.Server || mode == GameMode.SinglePlayer) {
+            for (Map.Entry<Integer, RadioChannel> entry : this.scriptManager.getChannels().entrySet()) {
+                entry.getValue().setActiveScriptNull();
             }
-            ArrayList arrayList = new ArrayList();
-            String string = ZomboidFileSystem.instance.getFileNameInCurrentSave("radio", "data", SAVE_FILE);
-            File file = new File(string);
+            ArrayList<String> channelLines = new ArrayList<String>();
+            String fileName = ZomboidFileSystem.instance.getFileNameInCurrentSave("radio", "data", SAVE_FILE);
+            File file = new File(fileName);
             if (!file.exists()) {
                 return false;
             }
-            if (DebugLog.isEnabled((DebugType)DebugType.Radio)) {
-                DebugLog.log((DebugType)DebugType.Radio, (String)("Loading radio save:" + string));
+            if (DebugLog.isEnabled(DebugType.Radio)) {
+                DebugLog.log(DebugType.Radio, "Loading radio save:" + fileName);
             }
-            try (FileReader exception = new FileReader(file);
-                 BufferedReader bufferedReader = new BufferedReader(exception);){
-                String string2;
-                while ((string2 = bufferedReader.readLine()) != null) {
-                    if ((string2 = string2.trim()).startsWith("DaysSinceStart") || string2.startsWith("LvObfuscation")) {
-                        String[] stringArray;
-                        if (string2.startsWith("DaysSinceStart")) {
-                            stringArray = string2.split("=");
-                            this.DaysSinceStart = Integer.parseInt(stringArray[1].trim());
+            try (FileReader fr = new FileReader(file);
+                 BufferedReader r = new BufferedReader(fr);){
+                String line;
+                while ((line = r.readLine()) != null) {
+                    if ((line = line.trim()).startsWith("DaysSinceStart") || line.startsWith("LvObfuscation")) {
+                        String[] s;
+                        if (line.startsWith("DaysSinceStart")) {
+                            s = line.split("=");
+                            this.daysSinceStart = Integer.parseInt(s[1].trim());
                         }
-                        if (!string2.startsWith("LvObfuscation")) continue;
-                        stringArray = string2.split("=");
-                        LOUISVILLE_OBFUSCATION = Boolean.parseBoolean(stringArray[1].trim());
+                        if (!line.startsWith("LvObfuscation")) continue;
+                        s = line.split("=");
+                        louisvilleObfuscation = Boolean.parseBoolean(s[1].trim());
                         continue;
                     }
-                    arrayList.add(string2);
+                    channelLines.add(line);
                 }
             }
-            catch (Exception exception2) {
-                exception2.printStackTrace();
+            catch (Exception ex) {
+                ex.printStackTrace();
                 return false;
             }
             try {
-                DebugLog.log((String)"Radio Loading channels...");
-                this.scriptManager.Load((List)arrayList);
+                DebugLog.log("Radio Loading channels...");
+                this.scriptManager.Load(channelLines);
             }
-            catch (Exception exception) {
-                exception.printStackTrace();
-                boolean bl2 = false;
-                return bl2;
+            catch (Exception ex) {
+                ex.printStackTrace();
+                boolean bl = false;
+                return bl;
             }
             finally {
-                bl = true;
+                result = true;
             }
         }
-        return bl;
+        return result;
     }
 
     public void Reset() {
@@ -441,402 +430,396 @@ public final class ZomboidRadio {
         }
     }
 
-    public void UpdateScripts(int n, int n2) {
-        GameMode gameMode = this.getGameMode();
-        if (gameMode.equals((Object)GameMode.Server) || gameMode.equals((Object)GameMode.SinglePlayer)) {
-            if (n == 0 && this.lastRecordedHour != 0) {
-                ++this.DaysSinceStart;
+    public void UpdateScripts(int hour, int mins) {
+        GameMode mode = this.getGameMode();
+        if (mode == GameMode.Server || mode == GameMode.SinglePlayer) {
+            if (hour == 0 && this.lastRecordedHour != 0) {
+                ++this.daysSinceStart;
             }
-            this.lastRecordedHour = n;
+            this.lastRecordedHour = hour;
             if (this.scriptManager != null) {
-                this.scriptManager.UpdateScripts(this.DaysSinceStart, n, n2);
+                this.scriptManager.UpdateScripts(this.daysSinceStart, hour, mins);
             }
             try {
                 this.Save();
             }
-            catch (Exception exception) {
-                System.out.println(exception.getMessage());
+            catch (Exception e) {
+                System.out.println(e.getMessage());
             }
         }
-        if (gameMode.equals((Object)GameMode.Client) || gameMode.equals((Object)GameMode.SinglePlayer)) {
+        if (mode == GameMode.Client || mode == GameMode.SinglePlayer) {
             for (int i = 0; i < this.devices.size(); ++i) {
-                WaveSignalDevice waveSignalDevice = this.devices.get(i);
-                if (!waveSignalDevice.getDeviceData().getIsTurnedOn() || !waveSignalDevice.HasPlayerInRange()) continue;
-                waveSignalDevice.getDeviceData().TriggerPlayerListening(true);
+                WaveSignalDevice device = this.devices.get(i);
+                if (!device.getDeviceData().getIsTurnedOn() || !device.HasPlayerInRange()) continue;
+                device.getDeviceData().TriggerPlayerListening(true);
             }
         }
-        if (gameMode.equals((Object)GameMode.Client) && !this.hasRecievedServerData) {
+        if (mode == GameMode.Client && !this.hasRecievedServerData) {
             GameClient.sendRadioServerDataRequest();
         }
     }
 
     public void render() {
-        GameMode gameMode = this.getGameMode();
-        if (DEBUG_MODE && !gameMode.equals((Object)GameMode.Server) && this.debugConsole != null) {
-            this.debugConsole.render();
-        }
-        if (!gameMode.equals((Object)GameMode.Server) && this.storySoundManager != null) {
+        GameMode mode = this.getGameMode();
+        if (mode != GameMode.Server && this.storySoundManager != null) {
             this.storySoundManager.render();
         }
     }
 
-    private void addFrequencyListEntry(boolean bl, DeviceData deviceData, int n, int n2) {
-        if (deviceData == null) {
+    private void addFrequencyListEntry(boolean isinvitem, DeviceData devicedata, int x, int y) {
+        if (devicedata == null) {
             return;
         }
-        if (!this.freqlist.containsKey(deviceData.getChannel())) {
-            this.freqlist.put(deviceData.getChannel(), new FreqListEntry(bl, deviceData, n, n2));
-        } else if (this.freqlist.get((Object)Integer.valueOf((int)deviceData.getChannel())).deviceData.getTransmitRange() < deviceData.getTransmitRange()) {
-            FreqListEntry freqListEntry = this.freqlist.get(deviceData.getChannel());
-            freqListEntry.isInvItem = bl;
-            freqListEntry.deviceData = deviceData;
-            freqListEntry.sourceX = n;
-            freqListEntry.sourceY = n2;
+        if (!this.freqlist.containsKey(devicedata.getChannel())) {
+            this.freqlist.put(devicedata.getChannel(), new FreqListEntry(isinvitem, devicedata, x, y));
+        } else if (this.freqlist.get((Object)Integer.valueOf((int)devicedata.getChannel())).deviceData.getTransmitRange() < devicedata.getTransmitRange()) {
+            FreqListEntry fe = this.freqlist.get(devicedata.getChannel());
+            fe.isInvItem = isinvitem;
+            fe.deviceData = devicedata;
+            fe.sourceX = x;
+            fe.sourceY = y;
         }
     }
 
     public void update() {
-        GameMode gameMode;
         this.LouisvilleObfuscationCheck();
-        if (DEBUG_MODE && this.debugConsole != null) {
-            this.debugConsole.update();
-        }
-        if (((gameMode = this.getGameMode()).equals((Object)GameMode.Server) || gameMode.equals((Object)GameMode.SinglePlayer)) && this.DaysSinceStart > 14 && !POST_RADIO_SILENCE) {
-            POST_RADIO_SILENCE = true;
-            if (GameServer.bServer) {
+        GameMode mode = this.getGameMode();
+        if (!(mode != GameMode.Server && mode != GameMode.SinglePlayer || this.daysSinceStart <= 14 || postRadioSilence)) {
+            postRadioSilence = true;
+            if (GameServer.server) {
                 GameServer.sendRadioPostSilence();
             }
         }
-        if (!gameMode.equals((Object)GameMode.Server) && this.storySoundManager != null) {
-            this.storySoundManager.update(this.DaysSinceStart, GameTime.instance.getHour(), GameTime.instance.getMinutes());
+        if (mode != GameMode.Server && this.storySoundManager != null) {
+            this.storySoundManager.update(this.daysSinceStart, GameTime.instance.getHour(), GameTime.instance.getMinutes());
         }
-        if ((gameMode.equals((Object)GameMode.Server) || gameMode.equals((Object)GameMode.SinglePlayer)) && this.scriptManager != null) {
+        if ((mode == GameMode.Server || mode == GameMode.SinglePlayer) && this.scriptManager != null) {
             this.scriptManager.update();
         }
-        if (gameMode.equals((Object)GameMode.SinglePlayer) || gameMode.equals((Object)GameMode.Client)) {
+        if (mode == GameMode.SinglePlayer || mode == GameMode.Client) {
             for (int i = 0; i < IsoPlayer.numPlayers; ++i) {
-                Object object;
-                String string;
-                IsoPlayer isoPlayer = IsoPlayer.players[i];
-                if (isoPlayer == null || isoPlayer.getLastSpokenLine() == null || this.playerLastLine[i] != null && this.playerLastLine[i].equals(isoPlayer.getLastSpokenLine())) continue;
-                this.playerLastLine[i] = string = isoPlayer.getLastSpokenLine();
-                if (gameMode.equals((Object)GameMode.Client) && ((isoPlayer.accessLevel.equals("admin") || isoPlayer.accessLevel.equals("gm") || isoPlayer.accessLevel.equals("overseer") || isoPlayer.accessLevel.equals("moderator")) && (ServerOptions.instance.DisableRadioStaff.getValue() || ServerOptions.instance.DisableRadioAdmin.getValue() && isoPlayer.accessLevel.equals("admin") || ServerOptions.instance.DisableRadioGM.getValue() && isoPlayer.accessLevel.equals("gm") || ServerOptions.instance.DisableRadioOverseer.getValue() && isoPlayer.accessLevel.equals("overseer") || ServerOptions.instance.DisableRadioModerator.getValue() && isoPlayer.accessLevel.equals("moderator")) || ServerOptions.instance.DisableRadioInvisible.getValue() && isoPlayer.isInvisible())) continue;
+                String lastChatMessage;
+                IsoPlayer player = IsoPlayer.players[i];
+                if (player == null || player.getLastSpokenLine() == null || this.playerLastLine[i] != null && this.playerLastLine[i].equals(player.getLastSpokenLine())) continue;
+                this.playerLastLine[i] = lastChatMessage = player.getLastSpokenLine();
+                if (mode == GameMode.Client && ((player.role == Roles.getDefaultForAdmin() || player.role == Roles.getDefaultForGM() || player.role == Roles.getDefaultForModerator()) && (ServerOptions.instance.disableRadioStaff.getValue() || ServerOptions.instance.disableRadioAdmin.getValue() && player.role == Roles.getDefaultForAdmin() || ServerOptions.instance.disableRadioGm.getValue() && player.role == Roles.getDefaultForGM() || ServerOptions.instance.disableRadioOverseer.getValue() && player.role == Roles.getDefaultForOverseer() || ServerOptions.instance.disableRadioModerator.getValue() && player.role == Roles.getDefaultForModerator()) || ServerOptions.instance.disableRadioInvisible.getValue() && player.isInvisible())) continue;
                 this.freqlist.clear();
-                if (!GameClient.bClient && !GameServer.bServer) {
-                    for (int j = 0; j < IsoPlayer.numPlayers; ++j) {
-                        this.checkPlayerForDevice(IsoPlayer.players[j], isoPlayer);
+                if (!GameClient.client && !GameServer.server) {
+                    for (int index = 0; index < IsoPlayer.numPlayers; ++index) {
+                        this.checkPlayerForDevice(IsoPlayer.players[index], player);
                     }
-                } else if (GameClient.bClient) {
-                    object = GameClient.instance.getPlayers();
-                    for (int j = 0; j < ((ArrayList)object).size(); ++j) {
-                        this.checkPlayerForDevice((IsoPlayer)((ArrayList)object).get(j), isoPlayer);
+                } else if (GameClient.client) {
+                    ArrayList<IsoPlayer> players = GameClient.instance.getPlayers();
+                    for (int j = 0; j < players.size(); ++j) {
+                        this.checkPlayerForDevice((IsoPlayer)players.get(j), player);
                     }
                 }
-                for (WaveSignalDevice waveSignalDevice : this.broadcastDevices) {
-                    if (waveSignalDevice == null || waveSignalDevice.getDeviceData() == null || !waveSignalDevice.getDeviceData().getIsTurnedOn() || !waveSignalDevice.getDeviceData().getIsTwoWay() || !waveSignalDevice.HasPlayerInRange() || waveSignalDevice.getDeviceData().getMicIsMuted() || this.GetDistance((int)isoPlayer.getX(), (int)isoPlayer.getY(), (int)waveSignalDevice.getX(), (int)waveSignalDevice.getY()) >= waveSignalDevice.getDeviceData().getMicRange()) continue;
-                    this.addFrequencyListEntry(true, waveSignalDevice.getDeviceData(), (int)waveSignalDevice.getX(), (int)waveSignalDevice.getY());
+                for (WaveSignalDevice device : this.broadcastDevices) {
+                    if (device == null || device.getDeviceData() == null || !device.getDeviceData().getIsTurnedOn() || !device.getDeviceData().getIsTwoWay() || !device.HasPlayerInRange() || device.getDeviceData().getMicIsMuted() || this.GetDistance(PZMath.fastfloor(player.getX()), PZMath.fastfloor(player.getY()), PZMath.fastfloor(device.getX()), PZMath.fastfloor(device.getY())) >= device.getDeviceData().getMicRange()) continue;
+                    this.addFrequencyListEntry(true, device.getDeviceData(), PZMath.fastfloor(device.getX()), PZMath.fastfloor(device.getY()));
                 }
-                if (this.freqlist.size() <= 0) continue;
-                object = isoPlayer.getSpeakColour();
+                if (this.freqlist.isEmpty()) continue;
+                Color col = player.getSpeakColour();
                 for (Map.Entry<Integer, FreqListEntry> entry : this.freqlist.entrySet()) {
-                    FreqListEntry freqListEntry = entry.getValue();
-                    this.SendTransmission(freqListEntry.sourceX, freqListEntry.sourceY, entry.getKey(), this.playerLastLine[i], null, null, ((Color)object).r, ((Color)object).g, ((Color)object).b, freqListEntry.deviceData.getTransmitRange(), false);
+                    FreqListEntry d = entry.getValue();
+                    this.SendTransmission(d.sourceX, d.sourceY, entry.getKey(), this.playerLastLine[i], null, null, col.r, col.g, col.b, d.deviceData.getTransmitRange(), false);
                 }
             }
         }
     }
 
-    private void checkPlayerForDevice(IsoPlayer isoPlayer, IsoPlayer isoPlayer2) {
+    private void checkPlayerForDevice(IsoPlayer plr, IsoPlayer selfPlayer) {
         Radio radio;
-        boolean bl;
-        boolean bl2 = bl = isoPlayer == isoPlayer2;
-        if (isoPlayer != null && (radio = isoPlayer.getEquipedRadio()) != null && radio.getDeviceData() != null && radio.getDeviceData().getIsPortable() && radio.getDeviceData().getIsTwoWay() && radio.getDeviceData().getIsTurnedOn() && !radio.getDeviceData().getMicIsMuted() && (bl || this.GetDistance((int)isoPlayer2.getX(), (int)isoPlayer2.getY(), (int)isoPlayer.getX(), (int)isoPlayer.getY()) < radio.getDeviceData().getMicRange())) {
-            this.addFrequencyListEntry(true, radio.getDeviceData(), (int)isoPlayer.getX(), (int)isoPlayer.getY());
+        boolean playerIsSelf;
+        boolean bl = playerIsSelf = plr == selfPlayer;
+        if (plr != null && (radio = plr.getEquipedRadio()) != null && radio.getDeviceData() != null && radio.getDeviceData().getIsPortable() && radio.getDeviceData().getIsTwoWay() && radio.getDeviceData().getIsTurnedOn() && !radio.getDeviceData().getMicIsMuted() && (playerIsSelf || this.GetDistance(PZMath.fastfloor(selfPlayer.getX()), PZMath.fastfloor(selfPlayer.getY()), PZMath.fastfloor(plr.getX()), PZMath.fastfloor(plr.getY())) < radio.getDeviceData().getMicRange())) {
+            this.addFrequencyListEntry(true, radio.getDeviceData(), PZMath.fastfloor(plr.getX()), PZMath.fastfloor(plr.getY()));
         }
     }
 
-    private boolean DeviceInRange(int n, int n2, int n3, int n4, int n5) {
-        return n > n3 - n5 && n < n3 + n5 && n2 > n4 - n5 && n2 < n4 + n5 && Math.sqrt(Math.pow(n - n3, 2.0) + Math.pow(n2 - n4, 2.0)) < (double)n5;
+    private boolean DeviceInRange(int dx, int dy, int sx, int sy, int ss) {
+        return dx > sx - ss && dx < sx + ss && dy > sy - ss && dy < sy + ss && Math.sqrt(Math.pow(dx - sx, 2.0) + Math.pow(dy - sy, 2.0)) < (double)ss;
     }
 
-    private int GetDistance(int n, int n2, int n3, int n4) {
-        return (int)Math.sqrt(Math.pow(n - n3, 2.0) + Math.pow(n2 - n4, 2.0));
+    private int GetDistance(int dx, int dy, int sx, int sy) {
+        return (int)Math.sqrt(Math.pow(dx - sx, 2.0) + Math.pow(dy - sy, 2.0));
     }
 
     /*
      * WARNING - Removed try catching itself - possible behaviour change.
      */
-    private void DistributeToPlayerOnClient(IsoPlayer isoPlayer, int n, int n2, int n3, String string, String string2, String string3, float f, float f2, float f3, int n4, boolean bl) {
-        if (isoPlayer != null && isoPlayer.getOnlineID() != -1) {
-            VoiceManagerData voiceManagerData = VoiceManagerData.get((short)isoPlayer.getOnlineID());
-            ArrayList arrayList = voiceManagerData.radioData;
+    private void DistributeToPlayerOnClient(IsoPlayer player, int sourceX, int sourceY, int channel, String msg, String guid, String codes, float r, float g, float b, int signalStrength, boolean isTV) {
+        if (player != null && player.getOnlineID() != -1) {
+            VoiceManagerData myRadioData = VoiceManagerData.get(player.getOnlineID());
+            ArrayList<VoiceManagerData.RadioData> arrayList = myRadioData.radioData;
             synchronized (arrayList) {
-                for (VoiceManagerData.RadioData radioData : voiceManagerData.radioData) {
-                    if (!radioData.isReceivingAvailable(n3)) continue;
-                    this.DistributeToPlayerInternal(radioData.getDeviceData().getParent(), isoPlayer, n, n2, string, string2, string3, f, f2, f3, n4);
+                for (VoiceManagerData.RadioData radio : myRadioData.radioData) {
+                    if (!radio.isReceivingAvailable(channel)) continue;
+                    this.DistributeToPlayerInternal(radio.getDeviceData().getParent(), player, sourceX, sourceY, msg, guid, codes, r, g, b, signalStrength);
                 }
             }
         }
     }
 
-    private void DistributeToPlayer(IsoPlayer isoPlayer, int n, int n2, int n3, String string, String string2, String string3, float f, float f2, float f3, int n4, boolean bl) {
+    private void DistributeToPlayer(IsoPlayer player, int sourceX, int sourceY, int channel, String msg, String guid, String codes, float r, float g, float b, int signalStrength, boolean isTV) {
         Radio radio;
-        if (isoPlayer != null && (radio = isoPlayer.getEquipedRadio()) != null && radio.getDeviceData() != null && radio.getDeviceData().getIsPortable() && radio.getDeviceData().getIsTurnedOn() && radio.getDeviceData().getChannel() == n3) {
+        if (player != null && (radio = player.getEquipedRadio()) != null && radio.getDeviceData() != null && radio.getDeviceData().getIsPortable() && radio.getDeviceData().getIsTurnedOn() && radio.getDeviceData().getChannel() == channel) {
             if (radio.getDeviceData().getDeviceVolume() <= 0.0f) {
                 return;
             }
             if (radio.getDeviceData().isPlayingMedia() || radio.getDeviceData().isNoTransmit()) {
                 return;
             }
-            this.DistributeToPlayerInternal((WaveSignalDevice)radio, isoPlayer, n, n2, string, string2, string3, f, f2, f3, n4);
+            this.DistributeToPlayerInternal(radio, player, sourceX, sourceY, msg, guid, codes, r, g, b, signalStrength);
         }
     }
 
-    private void DistributeToPlayerInternal(WaveSignalDevice waveSignalDevice, IsoPlayer isoPlayer, int n, int n2, String string, String string2, String string3, float f, float f2, float f3, int n3) {
-        boolean bl = false;
-        int n4 = -1;
-        if (n3 < 0) {
-            bl = true;
+    private void DistributeToPlayerInternal(WaveSignalDevice radio, IsoPlayer player, int sourceX, int sourceY, String msg, String guid, String codes, float r, float g, float b, int signalStrength) {
+        boolean pass = false;
+        int dist = -1;
+        if (signalStrength < 0) {
+            pass = true;
         } else {
-            n4 = this.GetDistance((int)isoPlayer.getX(), (int)isoPlayer.getY(), n, n2);
-            if (n4 > 3 && n4 < n3) {
-                bl = true;
+            dist = this.GetDistance((int)player.getX(), (int)player.getY(), sourceX, sourceY);
+            if (dist > 3 && dist < signalStrength) {
+                pass = true;
             }
         }
-        if (bl) {
-            if (n3 > 0) {
+        if (pass) {
+            if (signalStrength > 0) {
                 this.hasAppliedRangeDistortion = false;
-                string = this.doDeviceRangeDistortion(string, n3, n4);
+                msg = this.doDeviceRangeDistortion(msg, signalStrength, dist);
             }
             if (!this.hasAppliedRangeDistortion) {
-                waveSignalDevice.AddDeviceText(isoPlayer, string, f, f2, f3, string2, string3, n4);
+                radio.AddDeviceText(player, msg, r, g, b, guid, codes, dist);
             } else {
-                waveSignalDevice.AddDeviceText(string, 0.5f, 0.5f, 0.5f, string2, string3, n4);
+                radio.AddDeviceText(msg, 0.5f, 0.5f, 0.5f, guid, codes, dist);
             }
         }
     }
 
-    private void DistributeTransmission(int n, int n2, int n3, String string, String string2, String string3, float f, float f2, float f3, int n4, boolean bl) {
-        int n5;
-        if (!bl) {
-            if (!GameClient.bClient && !GameServer.bServer) {
-                for (n5 = 0; n5 < IsoPlayer.numPlayers; ++n5) {
-                    this.DistributeToPlayer(IsoPlayer.players[n5], n, n2, n3, string, string2, string3, f, f2, f3, n4, bl);
+    public void DistributeTransmission(int sourceX, int sourceY, int channel, String msg, String guid, String codes, float r, float g, float b, int signalStrength, boolean isTV) {
+        if (!isTV) {
+            if (!GameClient.client && !GameServer.server) {
+                for (int index = 0; index < IsoPlayer.numPlayers; ++index) {
+                    this.DistributeToPlayer(IsoPlayer.players[index], sourceX, sourceY, channel, msg, guid, codes, r, g, b, signalStrength, isTV);
                 }
-            } else if (GameClient.bClient) {
-                for (IsoPlayer isoPlayer : IsoPlayer.players) {
-                    this.DistributeToPlayerOnClient(isoPlayer, n, n2, n3, string, string2, string3, f, f2, f3, n4, bl);
+            } else if (GameClient.client) {
+                for (IsoPlayer player : IsoPlayer.players) {
+                    this.DistributeToPlayerOnClient(player, sourceX, sourceY, channel, msg, guid, codes, r, g, b, signalStrength, isTV);
                 }
                 return;
             }
         }
-        if (this.devices.size() == 0) {
+        if (this.devices.isEmpty()) {
             return;
         }
-        for (n5 = 0; n5 < this.devices.size(); ++n5) {
-            WaveSignalDevice waveSignalDevice = this.devices.get(n5);
-            if (waveSignalDevice == null || waveSignalDevice.getDeviceData() == null || !waveSignalDevice.getDeviceData().getIsTurnedOn() || bl != waveSignalDevice.getDeviceData().getIsTelevision()) continue;
-            if (waveSignalDevice.getDeviceData().isPlayingMedia() || waveSignalDevice.getDeviceData().isNoTransmit()) {
+        for (int i = 0; i < this.devices.size(); ++i) {
+            WaveSignalDevice device = this.devices.get(i);
+            if (device == null || device.getDeviceData() == null || !device.getDeviceData().getIsTurnedOn() || isTV != device.getDeviceData().getIsTelevision()) continue;
+            if (device.getDeviceData().isPlayingMedia() || device.getDeviceData().isNoTransmit()) {
                 return;
             }
-            if (n3 != waveSignalDevice.getDeviceData().getChannel()) continue;
-            boolean bl2 = false;
-            if (n4 == -1) {
-                bl2 = true;
-            } else if (n != (int)waveSignalDevice.getX() && n2 != (int)waveSignalDevice.getY()) {
-                bl2 = true;
+            if (channel != device.getDeviceData().getChannel()) continue;
+            boolean pass = false;
+            if (signalStrength == -1) {
+                pass = true;
+            } else if (sourceX != PZMath.fastfloor(device.getX()) && sourceY != PZMath.fastfloor(device.getY())) {
+                pass = true;
             }
-            if (!bl2) continue;
-            int n6 = -1;
-            if (n4 > 0) {
+            if (!pass) continue;
+            int dist = -1;
+            if (signalStrength > 0) {
                 this.hasAppliedRangeDistortion = false;
-                n6 = this.GetDistance((int)waveSignalDevice.getX(), (int)waveSignalDevice.getY(), n, n2);
-                string = this.doDeviceRangeDistortion(string, n4, n6);
+                dist = this.GetDistance(PZMath.fastfloor(device.getX()), PZMath.fastfloor(device.getY()), sourceX, sourceY);
+                msg = this.doDeviceRangeDistortion(msg, signalStrength, dist);
             }
             if (!this.hasAppliedRangeDistortion) {
-                waveSignalDevice.AddDeviceText(string, f, f2, f3, string2, string3, n6);
+                if (GameServer.server) {
+                    if (!(device.getDeviceData().getDeviceVolume() > 0.0f) || codes == null) continue;
+                    LuaEventManager.triggerEvent("OnDeviceText", guid, codes, Float.valueOf(device.getX()), Float.valueOf(device.getY()), Float.valueOf(device.getZ()), msg, device);
+                    continue;
+                }
+                device.AddDeviceText(msg, r, g, b, guid, codes, dist);
                 continue;
             }
-            waveSignalDevice.AddDeviceText(string, 0.5f, 0.5f, 0.5f, string2, string3, n6);
+            if (GameServer.server) {
+                if (!(device.getDeviceData().getDeviceVolume() > 0.0f) || codes == null) continue;
+                LuaEventManager.triggerEvent("OnDeviceText", guid, codes, Float.valueOf(device.getX()), Float.valueOf(device.getY()), Float.valueOf(device.getZ()), msg, device);
+                continue;
+            }
+            device.AddDeviceText(msg, 0.5f, 0.5f, 0.5f, guid, codes, dist);
         }
     }
 
-    private String doDeviceRangeDistortion(String string, int n, int n2) {
-        float f = (float)n * 0.9f;
-        if (f < (float)n && (float)n2 > f) {
-            float f2 = 100.0f * (((float)n2 - f) / ((float)n - f));
-            string = this.scrambleString(string, (int)f2, false);
+    private String doDeviceRangeDistortion(String msg, int signalStrength, int dist) {
+        float distortRange = (float)signalStrength * 0.9f;
+        if (distortRange < (float)signalStrength && (float)dist > distortRange) {
+            float scambleIntensity = 100.0f * (((float)dist - distortRange) / ((float)signalStrength - distortRange));
+            msg = this.scrambleString(msg, (int)scambleIntensity, false);
             this.hasAppliedRangeDistortion = true;
         }
-        return string;
+        return msg;
     }
 
     public GameMode getGameMode() {
-        if (!GameClient.bClient && !GameServer.bServer) {
+        if (!GameClient.client && !GameServer.server) {
             return GameMode.SinglePlayer;
         }
-        if (GameServer.bServer) {
+        if (GameServer.server) {
             return GameMode.Server;
         }
         return GameMode.Client;
     }
 
     public String getRandomBzztFzzt() {
-        int n = Rand.Next((int)staticSounds.length);
-        return staticSounds[n];
+        int r = Rand.Next(staticSounds.length);
+        return staticSounds[r];
     }
 
-    private String applyWeatherInterference(String string, int n) {
+    private String applyWeatherInterference(String msg, int signalStrength) {
         if (ClimateManager.getInstance().getWeatherInterference() <= 0.0f) {
-            return string;
+            return msg;
         }
-        int n2 = (int)(ClimateManager.getInstance().getWeatherInterference() * 100.0f);
-        return this.scrambleString(string, n2, n == -1);
+        int intensity = (int)(ClimateManager.getInstance().getWeatherInterference() * 100.0f);
+        return this.scrambleString(msg, intensity, signalStrength == -1);
     }
 
-    private String scrambleString(String string, int n, boolean bl) {
-        return this.scrambleString(string, n, bl, null);
+    private String scrambleString(String msg, int intensity, boolean ignoreBBcode) {
+        return this.scrambleString(msg, intensity, ignoreBBcode, null);
     }
 
-    public String scrambleString(String string, int n, boolean bl, String string2) {
+    public String scrambleString(String msg, int intensity, boolean ignoreBBcode, String customScramble) {
         this.hasAppliedInterference = false;
-        StringBuilder stringBuilder = this.stringBuilder;
-        stringBuilder.setLength(0);
-        if (n <= 0) {
-            return string;
+        StringBuilder newMsg = this.stringBuilder;
+        newMsg.setLength(0);
+        if (intensity <= 0) {
+            return msg;
         }
-        if (n >= 100) {
-            return string2 != null ? string2 : this.getRandomBzztFzzt();
+        if (intensity >= 100) {
+            return customScramble != null ? customScramble : this.getRandomBzztFzzt();
         }
         this.hasAppliedInterference = true;
-        if (bl) {
-            char[] cArray = string.toCharArray();
-            boolean bl2 = false;
-            boolean bl3 = false;
-            Object object = "";
-            for (int i = 0; i < cArray.length; ++i) {
-                char c = cArray[i];
-                if (bl3) {
-                    object = (String)object + c;
+        if (ignoreBBcode) {
+            char[] chars = msg.toCharArray();
+            boolean scrmbl = false;
+            boolean hasOpened = false;
+            Object word = "";
+            for (int i = 0; i < chars.length; ++i) {
+                char c = chars[i];
+                if (hasOpened) {
+                    word = (String)word + c;
                     if (c != ']') continue;
-                    stringBuilder.append((String)object);
-                    object = "";
-                    bl3 = false;
+                    newMsg.append((String)word);
+                    word = "";
+                    hasOpened = false;
                     continue;
                 }
-                if (c != '[' && (!Character.isWhitespace(c) || i <= 0 || Character.isWhitespace(cArray[i - 1]))) {
-                    object = (String)object + c;
+                if (c != '[' && (!Character.isWhitespace(c) || i <= 0 || Character.isWhitespace(chars[i - 1]))) {
+                    word = (String)word + c;
                     continue;
                 }
-                int n2 = Rand.Next((int)100);
-                if (n2 > n) {
-                    stringBuilder.append((String)object).append(" ");
-                    bl2 = false;
-                } else if (!bl2) {
-                    stringBuilder.append(string2 != null ? string2 : this.getRandomBzztFzzt()).append(" ");
-                    bl2 = true;
+                int r = Rand.Next(100);
+                if (r > intensity) {
+                    newMsg.append((String)word).append(" ");
+                    scrmbl = false;
+                } else if (!scrmbl) {
+                    newMsg.append(customScramble != null ? customScramble : this.getRandomBzztFzzt()).append(" ");
+                    scrmbl = true;
                 }
                 if (c == '[') {
-                    object = "[";
-                    bl3 = true;
+                    word = "[";
+                    hasOpened = true;
                     continue;
                 }
-                object = "";
+                word = "";
             }
-            if (object != null && ((String)object).length() > 0) {
-                stringBuilder.append((String)object);
+            if (word != null && !((String)word).isEmpty()) {
+                newMsg.append((String)word);
             }
         } else {
-            boolean bl4 = false;
-            String[] stringArray = string.split("\\s+");
-            for (int i = 0; i < stringArray.length; ++i) {
-                String string3 = stringArray[i];
-                int n3 = Rand.Next((int)100);
-                if (n3 > n) {
-                    stringBuilder.append(string3).append(" ");
-                    bl4 = false;
+            boolean scrmbl = false;
+            String[] words = msg.split("\\s+");
+            for (int i = 0; i < words.length; ++i) {
+                String word = words[i];
+                int r = Rand.Next(100);
+                if (r > intensity) {
+                    newMsg.append(word).append(" ");
+                    scrmbl = false;
                     continue;
                 }
-                if (bl4) continue;
-                stringBuilder.append(string2 != null ? string2 : this.getRandomBzztFzzt()).append(" ");
-                bl4 = true;
+                if (scrmbl) continue;
+                newMsg.append(customScramble != null ? customScramble : this.getRandomBzztFzzt()).append(" ");
+                scrmbl = true;
             }
         }
-        return stringBuilder.toString();
+        return newMsg.toString();
     }
 
-    public void ReceiveTransmission(int n, int n2, int n3, String string, String string2, String string3, float f, float f2, float f3, int n4, boolean bl) {
-        GameMode gameMode = this.getGameMode();
-        if (gameMode.equals((Object)GameMode.Server)) {
-            this.SendTransmission(n, n2, n3, string, string2, string3, f, f2, f3, n4, bl);
-        } else {
-            this.DistributeTransmission(n, n2, n3, string, string2, string3, f, f2, f3, n4, bl);
-        }
+    public void SendTransmission(int sourceX, int sourceY, ChatMessage msg, int signalStrength) {
+        Color color = msg.getTextColor();
+        int channel = msg.getRadioChannel();
+        this.SendTransmission(sourceX, sourceY, channel, msg.getText(), null, null, color.r, color.g, color.b, signalStrength, false);
     }
 
-    public void SendTransmission(int n, int n2, ChatMessage chatMessage, int n3) {
-        Color color = chatMessage.getTextColor();
-        int n4 = chatMessage.getRadioChannel();
-        this.SendTransmission(n, n2, n4, chatMessage.getText(), null, null, color.r, color.g, color.b, n3, false);
+    public void SendTransmission(int sourceX, int sourceY, int channel, String msg, String guid, String codes, float r, float g, float b, int signalStrength, boolean isTV) {
+        this.SendTransmission(-1L, sourceX, sourceY, channel, msg, guid, codes, r, g, b, signalStrength, isTV);
     }
 
-    public void SendTransmission(int n, int n2, int n3, String string, String string2, String string3, float f, float f2, float f3, int n4, boolean bl) {
-        this.SendTransmission(-1L, n, n2, n3, string, string2, string3, f, f2, f3, n4, bl);
-    }
-
-    public void SendTransmission(long l, int n, int n2, int n3, String string, String string2, String string3, float f, float f2, float f3, int n4, boolean bl) {
-        GameMode gameMode = this.getGameMode();
-        if (!(bl || gameMode != GameMode.Server && gameMode != GameMode.SinglePlayer)) {
+    public void SendTransmission(long source, int sourceX, int sourceY, int channel, String msg, String guid, String codes, float r, float g, float b, int signalStrength, boolean isTV) {
+        GameMode mode = this.getGameMode();
+        if (!(isTV || mode != GameMode.Server && mode != GameMode.SinglePlayer)) {
             this.hasAppliedInterference = false;
-            string = this.applyWeatherInterference(string, n4);
+            msg = this.applyWeatherInterference(msg, signalStrength);
             if (this.hasAppliedInterference) {
-                f = 0.5f;
-                f2 = 0.5f;
-                f3 = 0.5f;
-                string3 = "";
+                r = 0.5f;
+                g = 0.5f;
+                b = 0.5f;
+                codes = "";
             }
         }
-        if (gameMode.equals((Object)GameMode.SinglePlayer)) {
-            this.ReceiveTransmission(n, n2, n3, string, string2, string3, f, f2, f3, n4, bl);
-        } else if (gameMode.equals((Object)GameMode.Server)) {
-            GameServer.sendIsoWaveSignal((long)l, (int)n, (int)n2, (int)n3, (String)string, (String)string2, (String)string3, (float)f, (float)f2, (float)f3, (int)n4, (boolean)bl);
-        } else if (gameMode.equals((Object)GameMode.Client)) {
-            GameClient.sendIsoWaveSignal((int)n, (int)n2, (int)n3, (String)string, (String)string2, (String)string3, (float)f, (float)f2, (float)f3, (int)n4, (boolean)bl);
+        if (mode == GameMode.SinglePlayer) {
+            this.DistributeTransmission(sourceX, sourceY, channel, msg, guid, codes, r, g, b, signalStrength, isTV);
+        } else if (mode == GameMode.Server) {
+            this.DistributeTransmission(sourceX, sourceY, channel, msg, guid, codes, r, g, b, signalStrength, isTV);
+            GameServer.sendIsoWaveSignal(source, sourceX, sourceY, channel, msg, guid, codes, r, g, b, signalStrength, isTV);
+        } else if (mode == GameMode.Client) {
+            GameClient.sendIsoWaveSignal(sourceX, sourceY, channel, msg, guid, codes, r, g, b, signalStrength, isTV);
         }
     }
 
-    public void PlayerListensChannel(int n, boolean bl, boolean bl2) {
-        GameMode gameMode = this.getGameMode();
-        if (gameMode.equals((Object)GameMode.SinglePlayer) || gameMode.equals((Object)GameMode.Server)) {
+    public void PlayerListensChannel(int channel, boolean listenmode, boolean isTV) {
+        GameMode mode = this.getGameMode();
+        if (mode == GameMode.SinglePlayer || mode == GameMode.Server) {
             if (this.scriptManager != null) {
-                this.scriptManager.PlayerListensChannel(n, bl, bl2);
+                this.scriptManager.PlayerListensChannel(channel, listenmode, isTV);
             }
-        } else if (gameMode.equals((Object)GameMode.Client)) {
-            GameClient.sendPlayerListensChannel((int)n, (boolean)bl, (boolean)bl2);
+        } else if (mode == GameMode.Client) {
+            GameClient.sendPlayerListensChannel(channel, listenmode, isTV);
         }
     }
 
-    public void RegisterDevice(WaveSignalDevice waveSignalDevice) {
-        if (waveSignalDevice == null) {
+    public void RegisterDevice(WaveSignalDevice device) {
+        if (device == null) {
             return;
         }
-        if (!GameServer.bServer && !this.devices.contains(waveSignalDevice)) {
-            this.devices.add(waveSignalDevice);
+        if (!this.devices.contains(device)) {
+            this.devices.add(device);
         }
-        if (!GameServer.bServer && waveSignalDevice.getDeviceData().getIsTwoWay() && !this.broadcastDevices.contains(waveSignalDevice)) {
-            this.broadcastDevices.add(waveSignalDevice);
+        if (!GameServer.server && device.getDeviceData().getIsTwoWay() && !this.broadcastDevices.contains(device)) {
+            this.broadcastDevices.add(device);
         }
     }
 
-    public void UnRegisterDevice(WaveSignalDevice waveSignalDevice) {
-        if (waveSignalDevice == null) {
+    public void UnRegisterDevice(WaveSignalDevice device) {
+        if (device == null) {
             return;
         }
-        if (!GameServer.bServer && this.devices.contains(waveSignalDevice)) {
-            this.devices.remove(waveSignalDevice);
+        if (this.devices.contains(device)) {
+            this.devices.remove(device);
         }
-        if (!GameServer.bServer && waveSignalDevice.getDeviceData().getIsTwoWay() && this.broadcastDevices.contains(waveSignalDevice)) {
-            this.broadcastDevices.remove(waveSignalDevice);
+        if (!GameServer.server && device.getDeviceData().getIsTwoWay() && this.broadcastDevices.contains(device)) {
+            this.broadcastDevices.remove(device);
         }
     }
 
@@ -844,62 +827,75 @@ public final class ZomboidRadio {
         return null;
     }
 
-    public String computerize(String string) {
-        StringBuilder stringBuilder = this.stringBuilder;
-        stringBuilder.setLength(0);
-        for (char c : string.toCharArray()) {
+    public String computerize(String str) {
+        StringBuilder sb = this.stringBuilder;
+        sb.setLength(0);
+        for (char c : str.toCharArray()) {
             if (Character.isLetter(c)) {
-                stringBuilder.append(Rand.NextBool((int)2) ? Character.toLowerCase(c) : Character.toUpperCase(c));
+                sb.append(Rand.NextBool(2) ? Character.toLowerCase(c) : Character.toUpperCase(c));
                 continue;
             }
-            stringBuilder.append(c);
+            sb.append(c);
         }
-        return stringBuilder.toString();
+        return sb.toString();
     }
 
     public RecordedMedia getRecordedMedia() {
         return recordedMedia;
     }
 
-    public void setDisableBroadcasting(boolean bl) {
-        DISABLE_BROADCASTING = bl;
+    public void setDisableBroadcasting(boolean b) {
+        disableBroadcasting = b;
     }
 
     public boolean getDisableBroadcasting() {
-        return DISABLE_BROADCASTING;
+        return disableBroadcasting;
     }
 
-    public void setDisableMediaLineLearning(boolean bl) {
-        RecordedMedia.DISABLE_LINE_LEARNING = bl;
+    public void setDisableMediaLineLearning(boolean b) {
+        RecordedMedia.disableLineLearning = b;
     }
 
     public boolean getDisableMediaLineLearning() {
-        return RecordedMedia.DISABLE_LINE_LEARNING;
+        return RecordedMedia.disableLineLearning;
     }
 
     private void LouisvilleObfuscationCheck() {
-        if (GameClient.bClient || GameServer.bServer) {
+        if (GameClient.client || GameServer.server) {
             return;
         }
-        IsoPlayer isoPlayer = IsoPlayer.getInstance();
-        if (isoPlayer != null && isoPlayer.getY() < 3550.0f) {
-            LOUISVILLE_OBFUSCATION = true;
+        IsoPlayer player = IsoPlayer.getInstance();
+        if (player != null && player.getY() < 3550.0f) {
+            louisvilleObfuscation = true;
         }
     }
 
-    public static void ObfuscateChannelCheck(RadioChannel radioChannel) {
-        if (!radioChannel.isVanilla()) {
+    public static void ObfuscateChannelCheck(RadioChannel channel) {
+        if (!channel.isVanilla()) {
             return;
         }
-        int n = radioChannel.GetFrequency();
+        int freq = channel.GetFrequency();
         for (int i = 0; i < obfuscateChannels.length; ++i) {
-            if (n != obfuscateChannels[i]) continue;
-            radioChannel.setLouisvilleObfuscate(true);
+            if (freq != obfuscateChannels[i]) continue;
+            channel.setLouisvilleObfuscate(true);
         }
     }
 
     static {
-        LOUISVILLE_OBFUSCATION = false;
         obfuscateChannels = new int[]{200, 201, 204, 93200, 98000, 101200};
+    }
+
+    private static final class FreqListEntry {
+        public boolean isInvItem;
+        public DeviceData deviceData;
+        public int sourceX;
+        public int sourceY;
+
+        public FreqListEntry(boolean isinvitem, DeviceData devicedata, int x, int y) {
+            this.isInvItem = isinvitem;
+            this.deviceData = devicedata;
+            this.sourceX = x;
+            this.sourceY = y;
+        }
     }
 }
