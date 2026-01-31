@@ -49,6 +49,9 @@ import zombie.radio.scripting.RadioScriptManager;
 
 @UsedFromLua
 public final class ZomboidRadio {
+    static {
+        DebugLog.log((String)("PATCH: ZomboidRadio"));
+    }
     public static final String SAVE_FILE = "RADIO_SAVE.txt";
     private final ArrayList<WaveSignalDevice> devices = new ArrayList();
     private final ArrayList<WaveSignalDevice> broadcastDevices = new ArrayList();

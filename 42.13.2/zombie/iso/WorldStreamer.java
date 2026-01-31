@@ -46,6 +46,9 @@ import zombie.savefile.PlayerDB;
 import zombie.vehicles.VehiclesDB2;
 
 public final class WorldStreamer {
+    static {
+        DebugLog.log((String)("PATCH: WorldStreamer"));
+    }
     static final ChunkComparator comp = new ChunkComparator();
     private static final int CRF_CANCEL = 1;
     public static final int CRF_CANCEL_SENT = 2;

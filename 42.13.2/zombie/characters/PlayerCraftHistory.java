@@ -4,10 +4,15 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import zombie.UsedFromLua;
 import zombie.characters.IsoPlayer;
+import zombie.debug.DebugLog;
 import zombie.debug.DebugType;
 
 @UsedFromLua
 public class PlayerCraftHistory {
+    static {
+        DebugLog.log((String)("PATCH: PlayerCraftHistory"));
+    }
+
     private final IsoPlayer player;
     private final HashMap<String, CraftHistoryEntry> craftHistory;
     private static final CraftHistoryEntry craftHistoryDefaultEntry = new CraftHistoryEntry();
