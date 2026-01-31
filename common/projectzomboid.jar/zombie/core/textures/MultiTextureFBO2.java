@@ -23,7 +23,7 @@ import zombie.network.ServerGUI;
 import zombie.util.Type;
 
 public final class MultiTextureFBO2 {
-    private final float[] zoomLevelsDefault = new float[]{2.5f, 2.25f, 2.0f, 1.75f, 1.5f, 1.25f, 1.0f, 0.75f, 0.5f};
+    private final float[] zoomLevelsDefault = new float[]{4.0f, 3.0f, 2.5f, 2.25f, 2.0f, 1.75f, 1.5f, 1.25f, 1.0f, 0.75f, 0.5f, 0.25f};
     private float[] zoomLevels;
     public TextureFBO Current;
     public volatile TextureFBO FBOrendered = null;

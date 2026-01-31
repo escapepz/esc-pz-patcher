@@ -699,70 +699,8 @@ public final class ZomboidRadio {
     }
 
     public String scrambleString(String string, int n, boolean bl, String string2) {
-        this.hasAppliedInterference = false;
-        StringBuilder stringBuilder = this.stringBuilder;
-        stringBuilder.setLength(0);
-        if (n <= 0) {
-            return string;
-        }
-        if (n >= 100) {
-            return string2 != null ? string2 : this.getRandomBzztFzzt();
-        }
-        this.hasAppliedInterference = true;
-        if (bl) {
-            char[] cArray = string.toCharArray();
-            boolean bl2 = false;
-            boolean bl3 = false;
-            Object object = "";
-            for (int i = 0; i < cArray.length; ++i) {
-                char c = cArray[i];
-                if (bl3) {
-                    object = (String)object + c;
-                    if (c != ']') continue;
-                    stringBuilder.append((String)object);
-                    object = "";
-                    bl3 = false;
-                    continue;
-                }
-                if (c != '[' && (!Character.isWhitespace(c) || i <= 0 || Character.isWhitespace(cArray[i - 1]))) {
-                    object = (String)object + c;
-                    continue;
-                }
-                int n2 = Rand.Next((int)100);
-                if (n2 > n) {
-                    stringBuilder.append((String)object).append(" ");
-                    bl2 = false;
-                } else if (!bl2) {
-                    stringBuilder.append(string2 != null ? string2 : this.getRandomBzztFzzt()).append(" ");
-                    bl2 = true;
-                }
-                if (c == '[') {
-                    object = "[";
-                    bl3 = true;
-                    continue;
-                }
-                object = "";
-            }
-            if (object != null && ((String)object).length() > 0) {
-                stringBuilder.append((String)object);
-            }
-        } else {
-            boolean bl4 = false;
-            String[] stringArray = string.split("\\s+");
-            for (int i = 0; i < stringArray.length; ++i) {
-                String string3 = stringArray[i];
-                int n3 = Rand.Next((int)100);
-                if (n3 > n) {
-                    stringBuilder.append(string3).append(" ");
-                    bl4 = false;
-                    continue;
-                }
-                if (bl4) continue;
-                stringBuilder.append(string2 != null ? string2 : this.getRandomBzztFzzt()).append(" ");
-                bl4 = true;
-            }
-        }
-        return stringBuilder.toString();
+        ZomboidRadio zomboidRadio = this;
+        return string;
     }
 
     public void ReceiveTransmission(int n, int n2, int n3, String string, String string2, String string3, float f, float f2, float f3, int n4, boolean bl) {

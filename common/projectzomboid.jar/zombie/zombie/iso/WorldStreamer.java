@@ -599,8 +599,10 @@ public final class WorldStreamer {
         while (this.isBusy()) {
             long l3 = System.currentTimeMillis();
             if (l3 - l2 > 60000L) {
-                GameLoadingState.mapDownloadFailed = true;
-                throw new IOException("map download from server timed out");
+                DebugLog.log((String)("map download from server timed out"));
+            }
+            if (l3 - l2 > 600000L) { 
+                DebugLog.log((String)("map download timed out after 10 minutes"));
             }
             int n11 = this.largeAreaDownloads;
             GameLoadingState.GameLoadingString = Translator.getText((String)"IGUI_MP_DownloadedMapData", (Object)n11, (Object)n4);
