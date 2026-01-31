@@ -690,7 +690,7 @@ public final class ZomboidRadio {
     }
 
     public String scrambleString(String string, int intensity, boolean ignoreBBcode, String customScramble) {
-        ZomboidRadio zomboidRadio = this;
+        this.hasAppliedInterference = false;
         return string;
     }
 
