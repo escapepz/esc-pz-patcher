@@ -48,6 +48,9 @@ import zombie.radio.scripting.RadioScript;
 import zombie.radio.scripting.RadioScriptManager;
 
 public final class ZomboidRadio {
+    static {
+        DebugLog.log((String)("PATCH: ZomboidRadio"));
+    }
     public static final String SAVE_FILE = "RADIO_SAVE.txt";
     private final ArrayList<WaveSignalDevice> devices = new ArrayList();
     private final ArrayList<WaveSignalDevice> broadcastDevices = new ArrayList();
@@ -90,7 +93,6 @@ public final class ZomboidRadio {
     }
 
     private ZomboidRadio() {
-        DebugLog.log((String)("PATCHED: ZomboidRadio"));
         this.lastRecordedHour = GameTime.instance.getHour();
         SLSoundManager.DEBUG = DEBUG_SOUND;
         for (int i = 0; i < staticSounds.length; ++i) {

@@ -45,7 +45,7 @@ import zombie.vehicles.VehiclesDB2;
  */
 public final class WorldStreamer {
     static {
-        DebugLog.log((String)("PATCHED: WorldStreamer"));
+        DebugLog.log((String)("PATCH: WorldStreamer"));
     }
     static final ChunkComparator comp = new ChunkComparator();
     private static final int CRF_CANCEL = 1;
