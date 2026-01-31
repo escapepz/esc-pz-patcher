@@ -14,7 +14,7 @@ setlocal enabledelayedexpansion
 :: --- CONFIGURATION ---
 set "JAR_NAME=projectzomboid.jar"
 set "BACKUP_NAME=projectzomboid.jar.bak"
-set "SEVENZIP_PATH=C:\Program Files\71-Zip\7z.exe"
+set "SEVENZIP_PATH=C:\Program Files\7-Zip\7z.exe"
 set "DEFAULT_GAME_PATH=C:\Program Files (x86)\Steam\steamapps\common\ProjectZomboid"
 
 :: ==========================================
