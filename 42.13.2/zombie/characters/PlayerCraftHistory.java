@@ -11,9 +11,14 @@ import zombie.debug.DebugType;
 public class PlayerCraftHistory {
     private final IsoPlayer player;
     private final HashMap<String, CraftHistoryEntry> craftHistory;
-    private static final CraftHistoryEntry craftHistoryDefaultEntry;
-
+    private static final CraftHistoryEntry craftHistoryDefaultEntry = new CraftHistoryEntry();
+    private static boolean bLoggedPatch = false;
+    
     public PlayerCraftHistory(IsoPlayer player) {
+    	if (!bLoggedPatch) {
+            DebugLog.log("PATCH: PlayerCraftHistory");
+            bLoggedPatch = true;
+        }
         if (player == null) {
             throw new NullPointerException();
         }
@@ -58,11 +63,6 @@ public class PlayerCraftHistory {
             value.lastCraftTime = input.getDouble();
             this.craftHistory.put(key, value);
         }
-    }
-
-    static {
-        DebugLog.log("PATCH: PlayerCraftHistory");
-        craftHistoryDefaultEntry = new CraftHistoryEntry();
     }
 
     public static final class CraftHistoryEntry {

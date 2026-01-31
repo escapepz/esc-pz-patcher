@@ -36,6 +36,7 @@ public final class MultiTextureFBO2 {
     private float zoomedOutLevel;
     public final boolean[] autoZoom = new boolean[4];
     public boolean zoomEnabled = true;
+    private static boolean bLoggedPatch = false;
 
     public MultiTextureFBO2() {
         for (int n = 0; n < 4; ++n) {
@@ -150,6 +151,10 @@ public final class MultiTextureFBO2 {
     }
 
     public void create(int xres, int yres) throws Exception {
+    	if (!bLoggedPatch) {
+            DebugLog.log("PATCH: MultiTextureFBO2");
+            bLoggedPatch = true;
+        }
         if (!this.zoomEnabled) {
             return;
         }
@@ -171,15 +176,13 @@ public final class MultiTextureFBO2 {
         }
         IsoGameCharacter isoGameCharacter = IsoCamera.getCameraCharacter();
         if (this.autoZoom[playerIndex] && isoGameCharacter != null && this.zoomEnabled) {
-            float f;
             float dist = IsoUtils.DistanceTo(IsoCamera.getRightClickOffX(), IsoCamera.getRightClickOffY(), 0.0f, 0.0f);
             float delta = dist / 300.0f;
             if (delta > 1.0f) {
                 delta = 1.0f;
             }
             float zoom = this.shouldAutoZoomIn() ? this.zoomedInLevel : this.zoomedOutLevel;
-            zoom += delta;
-            if (f > this.zoomLevels[0]) {
+            if ((zoom += delta) > this.zoomLevels[0]) {
                 zoom = this.zoomLevels[0];
             }
             if (isoGameCharacter.getVehicle() != null) {
@@ -349,9 +352,5 @@ public final class MultiTextureFBO2 {
             return false;
         }
         return true;
-    }
-
-    static {
-        DebugLog.log("PATCH: MultiTextureFBO2");
     }
 }

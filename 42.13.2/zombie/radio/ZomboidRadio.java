@@ -62,7 +62,7 @@ public final class ZomboidRadio {
     private RadioDebugConsole debugConsole;
     private boolean hasRecievedServerData;
     private final SLSoundManager storySoundManager = null;
-    private static final String[] staticSounds;
+    private static final String[] staticSounds = new String[]{"<bzzt>", "<fzzt>", "<wzzt>", "<szzt>"};
     public static final boolean DEBUG_MODE = false;
     public static final boolean DEBUG_XML = false;
     public static final boolean DEBUG_SOUND = false;
@@ -78,6 +78,7 @@ public final class ZomboidRadio {
     private final StringBuilder stringBuilder = new StringBuilder();
     private boolean hasAppliedInterference;
     private static final int[] obfuscateChannels;
+    private static boolean bLoggedPatch = false;
 
     public static boolean hasInstance() {
         return instance != null;
@@ -200,6 +201,10 @@ public final class ZomboidRadio {
     }
 
     public void Init(int savedWorldVersion) {
+    	if (!bLoggedPatch) {
+            DebugLog.log("PATCH: ZomboidRadio");
+            bLoggedPatch = true;
+        }
         postRadioSilence = false;
         boolean success = false;
         boolean bDebugEnabled = DebugLog.isEnabled(DebugType.Radio);
@@ -412,10 +417,9 @@ public final class ZomboidRadio {
                 this.scriptManager.Load(channelLines);
             }
             catch (Exception ex) {
-                boolean bl;
                 ex.printStackTrace();
-                boolean bl2 = bl = false;
-                return bl2;
+                boolean bl = false;
+                return bl;
             }
             finally {
                 result = true;
@@ -531,8 +535,8 @@ public final class ZomboidRadio {
 
     private void checkPlayerForDevice(IsoPlayer plr, IsoPlayer selfPlayer) {
         Radio radio;
-        boolean playerIsSelf = plr == selfPlayer;
-        boolean bl = playerIsSelf;
+        boolean playerIsSelf;
+        boolean bl = playerIsSelf = plr == selfPlayer;
         if (plr != null && (radio = plr.getEquipedRadio()) != null && radio.getDeviceData() != null && radio.getDeviceData().getIsPortable() && radio.getDeviceData().getIsTwoWay() && radio.getDeviceData().getIsTurnedOn() && !radio.getDeviceData().getMicIsMuted() && (playerIsSelf || this.GetDistance(PZMath.fastfloor(selfPlayer.getX()), PZMath.fastfloor(selfPlayer.getY()), PZMath.fastfloor(plr.getX()), PZMath.fastfloor(plr.getY())) < radio.getDeviceData().getMicRange())) {
             this.addFrequencyListEntry(true, radio.getDeviceData(), PZMath.fastfloor(plr.getX()), PZMath.fastfloor(plr.getY()));
         }
@@ -551,10 +555,9 @@ public final class ZomboidRadio {
      */
     private void DistributeToPlayerOnClient(IsoPlayer player, int sourceX, int sourceY, int channel, String msg, String guid, String codes, float r, float g, float b, int signalStrength, boolean isTV) {
         if (player != null && player.getOnlineID() != -1) {
-            ArrayList<VoiceManagerData.RadioData> arrayList;
             VoiceManagerData myRadioData = VoiceManagerData.get(player.getOnlineID());
-            ArrayList<VoiceManagerData.RadioData> arrayList2 = arrayList = myRadioData.radioData;
-            synchronized (arrayList2) {
+            ArrayList<VoiceManagerData.RadioData> arrayList = myRadioData.radioData;
+            synchronized (arrayList) {
                 for (VoiceManagerData.RadioData radio : myRadioData.radioData) {
                     if (!radio.isReceivingAvailable(channel)) continue;
                     this.DistributeToPlayerInternal(radio.getDeviceData().getParent(), player, sourceX, sourceY, msg, guid, codes, r, g, b, signalStrength);
@@ -690,7 +693,7 @@ public final class ZomboidRadio {
     private String scrambleString(String msg, int intensity, boolean ignoreBBcode) {
         return this.scrambleString(msg, intensity, ignoreBBcode, null);
     }
-
+    
     public String scrambleString(String string, int intensity, boolean ignoreBBcode, String customScramble) {
         this.hasAppliedInterference = false;
         return string;
@@ -822,8 +825,6 @@ public final class ZomboidRadio {
     }
 
     static {
-        DebugLog.log("PATCH: ZomboidRadio");
-        staticSounds = new String[]{"<bzzt>", "<fzzt>", "<wzzt>", "<szzt>"};
         obfuscateChannels = new int[]{200, 201, 204, 93200, 98000, 101200};
     }
 

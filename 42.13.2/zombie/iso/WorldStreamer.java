@@ -46,14 +46,14 @@ import zombie.savefile.PlayerDB;
 import zombie.vehicles.VehiclesDB2;
 
 public final class WorldStreamer {
-    static final ChunkComparator comp;
+    static final ChunkComparator comp = new ChunkComparator();
     private static final int CRF_CANCEL = 1;
     public static final int CRF_CANCEL_SENT = 2;
     private static final int CRF_DELETE = 4;
     private static final int CRF_TIMEOUT = 8;
     private static final int CRF_RECEIVED = 16;
     private static final int BLOCK_SIZE = 1024;
-    public static WorldStreamer instance;
+    public static WorldStreamer instance = new WorldStreamer();
     private final ConcurrentLinkedQueue<IsoChunk> jobQueue = new ConcurrentLinkedQueue();
     private final Stack<IsoChunk> jobList = new Stack();
     private final ConcurrentLinkedQueue<IsoChunk> chunkRequests0 = new ConcurrentLinkedQueue();
@@ -79,6 +79,7 @@ public final class WorldStreamer {
     private volatile int largeAreaDownloads;
     private final ByteBuffer bb1 = ByteBuffer.allocate(5120);
     private final ByteBuffer bb2 = ByteBuffer.allocate(5120);
+    private static boolean bLoggedPatch = false;
 
     private int bufferSize(int size) {
         return (size + 1024 - 1) / 1024 * 1024;
@@ -164,10 +165,10 @@ public final class WorldStreamer {
         }
         if (!this.tempRequests.isEmpty()) {
             packet = new RequestZipListPacket();
-            packet.set(this.tempRequests);
+            ((RequestZipListPacket)packet).set(this.tempRequests);
             b = connection.startPacket();
             PacketTypes.PacketType.RequestZipList.doPacket(b);
-            packet.write(b);
+            ((RequestZipListPacket)packet).write(b);
             PacketTypes.PacketType.RequestZipList.send(connection);
             this.sentRequests.addAll(this.tempRequests);
         }
@@ -192,6 +193,7 @@ public final class WorldStreamer {
         boolean nReceived = false;
         boolean nCancel = false;
         for (int i = 0; i < this.pendingRequests1.size(); ++i) {
+            ByteBuffer requestBB;
             File file;
             ChunkRequest request = this.pendingRequests1.get(i);
             if ((request.flagsUdp & 0x10) == 0 || (request.flagsWs & 1) != 0 && (request.flagsMain & 2) == 0) continue;
@@ -204,8 +206,7 @@ public final class WorldStreamer {
                 file.delete();
                 ChunkChecksum.setChecksum(request.chunk.wx, request.chunk.wy, 0L);
             }
-            ByteBuffer requestBB = (request.flagsWs & 1) != 0 ? null : request.bb;
-            ByteBuffer byteBuffer = requestBB;
+            ByteBuffer byteBuffer = requestBB = (request.flagsWs & 1) != 0 ? null : request.bb;
             if (requestBB != null) {
                 File file2;
                 try {
@@ -357,6 +358,10 @@ public final class WorldStreamer {
     }
 
     public void create() {
+    	if (!bLoggedPatch) {
+            DebugLog.log("PATCH: WorldStreamer");
+            bLoggedPatch = true;
+        }
         if (this.worldStreamer != null) {
             return;
         }
@@ -812,12 +817,6 @@ public final class WorldStreamer {
         catch (Exception ex) {
             ex.printStackTrace();
         }
-    }
-
-    static {
-        DebugLog.log("PATCH: WorldStreamer");
-        comp = new ChunkComparator();
-        instance = new WorldStreamer();
     }
 
     public static final class ChunkRequest {
