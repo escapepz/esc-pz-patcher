@@ -44,6 +44,9 @@ import zombie.vehicles.VehiclesDB2;
  * Exception performing whole class analysis ignored.
  */
 public final class WorldStreamer {
+    static {
+        DebugLog.log((String)("PATCHED: WorldStreamer"));
+    }
     static final ChunkComparator comp = new ChunkComparator();
     private static final int CRF_CANCEL = 1;
     private static final int CRF_CANCEL_SENT = 2;

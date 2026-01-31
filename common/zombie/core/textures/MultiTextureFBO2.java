@@ -36,6 +36,7 @@ public final class MultiTextureFBO2 {
     public boolean bZoomEnabled = true;
 
     public MultiTextureFBO2() {
+        DebugLog.log((String)("PATCHED: MultiTextureFBO2"));
         for (int i = 0; i < 4; ++i) {
             this.startZoom[i] = 1.0f;
             this.targetZoom[i] = 1.0f;

@@ -90,6 +90,7 @@ public final class ZomboidRadio {
     }
 
     private ZomboidRadio() {
+        DebugLog.log((String)("PATCHED: ZomboidRadio"));
         this.lastRecordedHour = GameTime.instance.getHour();
         SLSoundManager.DEBUG = DEBUG_SOUND;
         for (int i = 0; i < staticSounds.length; ++i) {
