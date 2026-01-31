@@ -25,9 +25,6 @@ import zombie.network.GameServer;
 import zombie.network.ServerGUI;
 
 public final class MultiTextureFBO2 {
-    static {
-        DebugLog.log((String)("PATCH: MultiTextureFBO2"));
-    }
     private final float[] zoomLevelsDefault = new float[]{4.0f, 3.0f, 2.5f, 2.25f, 2.0f, 1.75f, 1.5f, 1.25f, 1.0f, 0.75f, 0.5f, 0.25f};
     private float[] zoomLevels;
     public TextureFBO current;
@@ -174,13 +171,15 @@ public final class MultiTextureFBO2 {
         }
         IsoGameCharacter isoGameCharacter = IsoCamera.getCameraCharacter();
         if (this.autoZoom[playerIndex] && isoGameCharacter != null && this.zoomEnabled) {
+            float f;
             float dist = IsoUtils.DistanceTo(IsoCamera.getRightClickOffX(), IsoCamera.getRightClickOffY(), 0.0f, 0.0f);
             float delta = dist / 300.0f;
             if (delta > 1.0f) {
                 delta = 1.0f;
             }
             float zoom = this.shouldAutoZoomIn() ? this.zoomedInLevel : this.zoomedOutLevel;
-            if ((zoom += delta) > this.zoomLevels[0]) {
+            zoom += delta;
+            if (f > this.zoomLevels[0]) {
                 zoom = this.zoomLevels[0];
             }
             if (isoGameCharacter.getVehicle() != null) {
@@ -350,5 +349,9 @@ public final class MultiTextureFBO2 {
             return false;
         }
         return true;
+    }
+
+    static {
+        DebugLog.log("PATCH: MultiTextureFBO2");
     }
 }

@@ -9,13 +9,9 @@ import zombie.debug.DebugType;
 
 @UsedFromLua
 public class PlayerCraftHistory {
-    static {
-        DebugLog.log((String)("PATCH: PlayerCraftHistory"));
-    }
-
     private final IsoPlayer player;
     private final HashMap<String, CraftHistoryEntry> craftHistory;
-    private static final CraftHistoryEntry craftHistoryDefaultEntry = new CraftHistoryEntry();
+    private static final CraftHistoryEntry craftHistoryDefaultEntry;
 
     public PlayerCraftHistory(IsoPlayer player) {
         if (player == null) {
@@ -62,6 +58,11 @@ public class PlayerCraftHistory {
             value.lastCraftTime = input.getDouble();
             this.craftHistory.put(key, value);
         }
+    }
+
+    static {
+        DebugLog.log("PATCH: PlayerCraftHistory");
+        craftHistoryDefaultEntry = new CraftHistoryEntry();
     }
 
     public static final class CraftHistoryEntry {

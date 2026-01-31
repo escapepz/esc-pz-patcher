@@ -46,17 +46,14 @@ import zombie.savefile.PlayerDB;
 import zombie.vehicles.VehiclesDB2;
 
 public final class WorldStreamer {
-    static {
-        DebugLog.log((String)("PATCH: WorldStreamer"));
-    }
-    static final ChunkComparator comp = new ChunkComparator();
+    static final ChunkComparator comp;
     private static final int CRF_CANCEL = 1;
     public static final int CRF_CANCEL_SENT = 2;
     private static final int CRF_DELETE = 4;
     private static final int CRF_TIMEOUT = 8;
     private static final int CRF_RECEIVED = 16;
     private static final int BLOCK_SIZE = 1024;
-    public static WorldStreamer instance = new WorldStreamer();
+    public static WorldStreamer instance;
     private final ConcurrentLinkedQueue<IsoChunk> jobQueue = new ConcurrentLinkedQueue();
     private final Stack<IsoChunk> jobList = new Stack();
     private final ConcurrentLinkedQueue<IsoChunk> chunkRequests0 = new ConcurrentLinkedQueue();
@@ -167,10 +164,10 @@ public final class WorldStreamer {
         }
         if (!this.tempRequests.isEmpty()) {
             packet = new RequestZipListPacket();
-            ((RequestZipListPacket)packet).set(this.tempRequests);
+            packet.set(this.tempRequests);
             b = connection.startPacket();
             PacketTypes.PacketType.RequestZipList.doPacket(b);
-            ((RequestZipListPacket)packet).write(b);
+            packet.write(b);
             PacketTypes.PacketType.RequestZipList.send(connection);
             this.sentRequests.addAll(this.tempRequests);
         }
@@ -195,7 +192,6 @@ public final class WorldStreamer {
         boolean nReceived = false;
         boolean nCancel = false;
         for (int i = 0; i < this.pendingRequests1.size(); ++i) {
-            ByteBuffer requestBB;
             File file;
             ChunkRequest request = this.pendingRequests1.get(i);
             if ((request.flagsUdp & 0x10) == 0 || (request.flagsWs & 1) != 0 && (request.flagsMain & 2) == 0) continue;
@@ -208,7 +204,8 @@ public final class WorldStreamer {
                 file.delete();
                 ChunkChecksum.setChecksum(request.chunk.wx, request.chunk.wy, 0L);
             }
-            ByteBuffer byteBuffer = requestBB = (request.flagsWs & 1) != 0 ? null : request.bb;
+            ByteBuffer requestBB = (request.flagsWs & 1) != 0 ? null : request.bb;
+            ByteBuffer byteBuffer = requestBB;
             if (requestBB != null) {
                 File file2;
                 try {
@@ -562,10 +559,10 @@ public final class WorldStreamer {
         while (this.isBusy()) {
             long now = System.currentTimeMillis();
             if (now - received > 60000L) {
-                DebugLog.log((String)("map download from server timed out"));
+                DebugLog.log("map download from server timed out");
             }
-            if (now - received > 600000L) { 
-                DebugLog.log((String)("map download timed out after 10 minutes"));
+            if (now - received > 600000L) {
+                DebugLog.log("map download timed out after 10 minutes");
             }
             int largeAreaDownloads = this.largeAreaDownloads;
             GameLoadingState.gameLoadingString = Translator.getText("IGUI_MP_DownloadedMapData", largeAreaDownloads, numRequests);
@@ -815,6 +812,12 @@ public final class WorldStreamer {
         catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    static {
+        DebugLog.log("PATCH: WorldStreamer");
+        comp = new ChunkComparator();
+        instance = new WorldStreamer();
     }
 
     public static final class ChunkRequest {

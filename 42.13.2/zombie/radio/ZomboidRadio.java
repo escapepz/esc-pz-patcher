@@ -49,9 +49,6 @@ import zombie.radio.scripting.RadioScriptManager;
 
 @UsedFromLua
 public final class ZomboidRadio {
-    static {
-        DebugLog.log((String)("PATCH: ZomboidRadio"));
-    }
     public static final String SAVE_FILE = "RADIO_SAVE.txt";
     private final ArrayList<WaveSignalDevice> devices = new ArrayList();
     private final ArrayList<WaveSignalDevice> broadcastDevices = new ArrayList();
@@ -65,7 +62,7 @@ public final class ZomboidRadio {
     private RadioDebugConsole debugConsole;
     private boolean hasRecievedServerData;
     private final SLSoundManager storySoundManager = null;
-    private static final String[] staticSounds = new String[]{"<bzzt>", "<fzzt>", "<wzzt>", "<szzt>"};
+    private static final String[] staticSounds;
     public static final boolean DEBUG_MODE = false;
     public static final boolean DEBUG_XML = false;
     public static final boolean DEBUG_SOUND = false;
@@ -415,9 +412,10 @@ public final class ZomboidRadio {
                 this.scriptManager.Load(channelLines);
             }
             catch (Exception ex) {
+                boolean bl;
                 ex.printStackTrace();
-                boolean bl = false;
-                return bl;
+                boolean bl2 = bl = false;
+                return bl2;
             }
             finally {
                 result = true;
@@ -533,8 +531,8 @@ public final class ZomboidRadio {
 
     private void checkPlayerForDevice(IsoPlayer plr, IsoPlayer selfPlayer) {
         Radio radio;
-        boolean playerIsSelf;
-        boolean bl = playerIsSelf = plr == selfPlayer;
+        boolean playerIsSelf = plr == selfPlayer;
+        boolean bl = playerIsSelf;
         if (plr != null && (radio = plr.getEquipedRadio()) != null && radio.getDeviceData() != null && radio.getDeviceData().getIsPortable() && radio.getDeviceData().getIsTwoWay() && radio.getDeviceData().getIsTurnedOn() && !radio.getDeviceData().getMicIsMuted() && (playerIsSelf || this.GetDistance(PZMath.fastfloor(selfPlayer.getX()), PZMath.fastfloor(selfPlayer.getY()), PZMath.fastfloor(plr.getX()), PZMath.fastfloor(plr.getY())) < radio.getDeviceData().getMicRange())) {
             this.addFrequencyListEntry(true, radio.getDeviceData(), PZMath.fastfloor(plr.getX()), PZMath.fastfloor(plr.getY()));
         }
@@ -553,9 +551,10 @@ public final class ZomboidRadio {
      */
     private void DistributeToPlayerOnClient(IsoPlayer player, int sourceX, int sourceY, int channel, String msg, String guid, String codes, float r, float g, float b, int signalStrength, boolean isTV) {
         if (player != null && player.getOnlineID() != -1) {
+            ArrayList<VoiceManagerData.RadioData> arrayList;
             VoiceManagerData myRadioData = VoiceManagerData.get(player.getOnlineID());
-            ArrayList<VoiceManagerData.RadioData> arrayList = myRadioData.radioData;
-            synchronized (arrayList) {
+            ArrayList<VoiceManagerData.RadioData> arrayList2 = arrayList = myRadioData.radioData;
+            synchronized (arrayList2) {
                 for (VoiceManagerData.RadioData radio : myRadioData.radioData) {
                     if (!radio.isReceivingAvailable(channel)) continue;
                     this.DistributeToPlayerInternal(radio.getDeviceData().getParent(), player, sourceX, sourceY, msg, guid, codes, r, g, b, signalStrength);
@@ -823,6 +822,8 @@ public final class ZomboidRadio {
     }
 
     static {
+        DebugLog.log("PATCH: ZomboidRadio");
+        staticSounds = new String[]{"<bzzt>", "<fzzt>", "<wzzt>", "<szzt>"};
         obfuscateChannels = new int[]{200, 201, 204, 93200, 98000, 101200};
     }
 
