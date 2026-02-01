@@ -25,7 +25,7 @@ set "DEFAULT_GAME_PATH=C:\Program Files (x86)\Steam\steamapps\common\ProjectZomb
 :: Use forward slashes / for compatibility.
 set "FILES_TO_PATCH="
 set "FILES_TO_PATCH=%FILES_TO_PATCH% zombie/radio/ZomboidRadio.class"
-::set "FILES_TO_PATCH=%FILES_TO_PATCH% zombie/iso/WorldStreamer.class"
+set "FILES_TO_PATCH=%FILES_TO_PATCH% zombie/iso/WorldStreamer.class"
 set "FILES_TO_PATCH=%FILES_TO_PATCH% zombie/core/textures/MultiTextureFBO2.class"
 set "FILES_TO_PATCH=%FILES_TO_PATCH% zombie/characters/PlayerCraftHistory.class"
 :: ==========================================
