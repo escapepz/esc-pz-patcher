@@ -1,7 +1,7 @@
 magick -size 512x512 xc:"#0d0d0d" ^
   -stroke "#c9a24d" -strokewidth 2 -fill none -draw "rectangle 1,1 510,510" ^
   -font "Courier-New" -fill "#c9a24d" -pointsize 20 ^
-  -annotate +20+32 "ESC_VERSION: 1.0.0" ^
+  -annotate +20+32 "ESC_VERSION: 1.0.1" ^
   -gravity center -pointsize 46 -annotate +0-90 "ESC PZ PATCHER" ^
   -gravity center -pointsize 18 -annotate +0-40 "[ INITIATING PATCH SEQUENCE ]" ^
   -annotate +0-15 "[ SCANNING FILES ........ OK ]" ^
@@ -10,3 +10,20 @@ magick -size 512x512 xc:"#0d0d0d" ^
   -gravity south -annotate +150+28 "// SYSTEM SUCCESS" ^
   -depth 8 -define png:color-type=2 ^
   esc_pz_patcher_preview_gold.png
+
+
+magick esc_pz_patcher_preview_gold.png ^
+  -colors 128 ^
+  -strip ^
+  -define png:compression-level=9 ^
+  esc_pz_patcher_preview_gold_compressed.png
+
+
+magick esc_pz_patcher_preview_gold_compressed.png ^
+  -resize 256x256 ^
+  poster.png
+
+
+magick esc_pz_patcher_preview_gold_compressed.png ^
+  -resize 32x32 ^
+  icon.png
