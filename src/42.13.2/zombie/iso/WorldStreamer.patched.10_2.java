@@ -79,7 +79,6 @@ public final class WorldStreamer {
     private volatile int largeAreaDownloads;
     private final ByteBuffer bb1 = ByteBuffer.allocate(5120);
     private final ByteBuffer bb2 = ByteBuffer.allocate(5120);
-    private static boolean bLoggedPatch = false;
 
     private int bufferSize(int size) {
         return (size + 1024 - 1) / 1024 * 1024;
@@ -109,7 +108,7 @@ public final class WorldStreamer {
         this.freeBuffers.add(bb);
     }
 
-    private void sendRequests() throws IOException {
+    private void sendRequests() {
         if (this.chunkRequests1.isEmpty()) {
             return;
         }
@@ -143,7 +142,6 @@ public final class WorldStreamer {
 
     public void updateMain() {
         ByteBufferWriter b;
-        INetworkPacket packet;
         UdpConnection connection = GameClient.connection;
         if (this.chunkHeadMain != null) {
             this.chunkRequests0.add(this.chunkHeadMain);
@@ -164,11 +162,11 @@ public final class WorldStreamer {
             request = this.waitingToSendQ.poll();
         }
         if (!this.tempRequests.isEmpty()) {
-            packet = new RequestZipListPacket();
-            ((RequestZipListPacket)packet).set(this.tempRequests);
+            RequestZipListPacket packet = new RequestZipListPacket();
+            packet.set(this.tempRequests);
             b = connection.startPacket();
             PacketTypes.PacketType.RequestZipList.doPacket(b);
-            ((RequestZipListPacket)packet).write(b);
+            packet.write(b);
             PacketTypes.PacketType.RequestZipList.send(connection);
             this.sentRequests.addAll(this.tempRequests);
         }
@@ -179,16 +177,16 @@ public final class WorldStreamer {
             request = this.waitingToCancelQ.poll();
         }
         if (!this.tempRequests.isEmpty()) {
-            packet = new NotRequiredInZipPacket();
-            ((NotRequiredInZipPacket)packet).set(this.tempRequests);
+            NotRequiredInZipPacket packet2 = new NotRequiredInZipPacket();
+            packet2.set(this.tempRequests);
             b = connection.startPacket();
             PacketTypes.PacketType.NotRequiredInZip.doPacket(b);
-            ((NotRequiredInZipPacket)packet).write(b);
+            packet2.write(b);
             PacketTypes.PacketType.NotRequiredInZip.send(connection);
         }
     }
 
-    private void loadReceivedChunks() throws DataFormatException, IOException {
+    private void loadReceivedChunks() {
         boolean debug = false;
         boolean nReceived = false;
         boolean nCancel = false;
@@ -208,7 +206,6 @@ public final class WorldStreamer {
             }
             ByteBuffer byteBuffer = requestBB = (request.flagsWs & 1) != 0 ? null : request.bb;
             if (requestBB != null) {
-                File file2;
                 try {
                     requestBB = this.decompress(requestBB);
                 }
@@ -217,8 +214,8 @@ public final class WorldStreamer {
                     this.chunkRequests1.add(request.chunk);
                     continue;
                 }
-                if (this.compare && (file2 = ChunkMapFilenames.instance.getFilename(request.chunk.wx, request.chunk.wy)).exists()) {
-                    this.compare(request, requestBB, file2);
+                if (this.compare && (file = ChunkMapFilenames.instance.getFilename(request.chunk.wx, request.chunk.wy)).exists()) {
+                    this.compare(request, requestBB, file);
                 }
             }
             if ((request.flagsWs & 8) == 0) {
@@ -252,7 +249,7 @@ public final class WorldStreamer {
         }
     }
 
-    private ByteBuffer decompress(ByteBuffer bb) throws DataFormatException {
+    private ByteBuffer decompress(ByteBuffer bb) {
         this.decompressor.reset();
         this.decompressor.setInput(bb.array(), 0, bb.position());
         int position = 0;
@@ -274,7 +271,7 @@ public final class WorldStreamer {
         return this.inMemoryZip;
     }
 
-    private void threadLoop() throws DataFormatException, InterruptedException, IOException {
+    private void threadLoop() {
         IsoChunk chunk;
         if (GameClient.client && !SystemDisabler.doWorldSyncEnable) {
             this.networkFileDebug = DebugType.NetworkFileDebug.isEnabled();
@@ -306,30 +303,29 @@ public final class WorldStreamer {
             chunk = this.jobQueue.poll();
         }
         if (!this.jobList.isEmpty()) {
-            IsoChunk chunk2;
             for (int i = this.jobList.size() - 1; i >= 0; --i) {
-                chunk2 = (IsoChunk)this.jobList.get(i);
-                if (!chunk2.refs.isEmpty()) continue;
+                chunk = (IsoChunk)this.jobList.get(i);
+                if (!chunk.refs.isEmpty()) continue;
                 this.jobList.remove(i);
-                chunk2.resetForStore();
-                assert (!IsoChunkMap.chunkStore.contains(chunk2));
-                IsoChunkMap.chunkStore.add(chunk2);
+                chunk.resetForStore();
+                assert (!IsoChunkMap.chunkStore.contains(chunk));
+                IsoChunkMap.chunkStore.add(chunk);
             }
             boolean busy = !this.jobList.isEmpty();
-            chunk2 = null;
+            chunk = null;
             if (busy) {
                 comp.init();
                 Collections.sort(this.jobList, comp);
-                chunk2 = (IsoChunk)this.jobList.remove(this.jobList.size() - 1);
+                chunk = (IsoChunk)this.jobList.remove(this.jobList.size() - 1);
             }
-            ChunkSaveWorker.instance.Update(chunk2);
-            if (chunk2 != null) {
-                if (chunk2.refs.isEmpty()) {
-                    chunk2.resetForStore();
-                    assert (!IsoChunkMap.chunkStore.contains(chunk2));
-                    IsoChunkMap.chunkStore.add(chunk2);
+            ChunkSaveWorker.instance.Update(chunk);
+            if (chunk != null) {
+                if (chunk.refs.isEmpty()) {
+                    chunk.resetForStore();
+                    assert (!IsoChunkMap.chunkStore.contains(chunk));
+                    IsoChunkMap.chunkStore.add(chunk);
                 } else {
-                    this.DoChunk(chunk2, null);
+                    this.DoChunk(chunk, null);
                 }
             }
             if (busy || ChunkSaveWorker.instance.saving) {
@@ -358,10 +354,6 @@ public final class WorldStreamer {
     }
 
     public void create() {
-    	if (!bLoggedPatch) {
-            DebugLog.log("PATCH: WorldStreamer");
-            bLoggedPatch = true;
-        }
         if (this.worldStreamer != null) {
             return;
         }
@@ -415,7 +407,7 @@ public final class WorldStreamer {
                 try {
                     Thread.sleep(50L);
                 }
-                catch (InterruptedException interruptedException) {
+                catch (InterruptedException v3) {
                     // empty catch block
                 }
             }
@@ -535,7 +527,7 @@ public final class WorldStreamer {
         this.stop();
     }
 
-    public void requestLargeAreaZip(int wx, int wy, int range) throws IOException {
+    public void requestLargeAreaZip(int wx, int wy, int range) {
         long start;
         INetworkPacket.send(PacketTypes.PacketType.RequestLargeAreaZip, wx, wy);
         this.requestingLargeArea = true;
@@ -557,27 +549,22 @@ public final class WorldStreamer {
                 ++numRequests;
             }
         }
-        DebugLog.log("Requested " + numRequests + " chunks from the server");
+        DebugLog.log("PATCH: Requested " + numRequests + " chunks from the server. With 10 minutes time-out.");
         long received = start = System.currentTimeMillis();
         int seconds = 0;
         int downloads = 0;
         int retryCount = 0;
-        final int MAX_RETRIES = 10;
         while (this.isBusy()) {
             long now = System.currentTimeMillis();
             if (now - received > 60000L) {
-                ++retryCount;
-                DebugLog.log("map download timeout: retry " + retryCount + "/" + MAX_RETRIES);
-                if (retryCount >= MAX_RETRIES) {
+                if (retryCount < 10) {
+                    ++retryCount;
+                    received = now;
+                    DebugLog.log("Map download from server timed out, retrying...");
+                } else {
                     GameLoadingState.mapDownloadFailed = true;
-                    throw new IOException("map download from server timed out after " + MAX_RETRIES + " retries");
+                    throw new IOException("map download from server timed out");
                 }
-                INetworkPacket.send(PacketTypes.PacketType.RequestLargeAreaZip, wx, wy);
-                try {
-                    Thread.sleep(50L * retryCount);
-                }
-                catch (InterruptedException interruptedException) {}
-                received = now;
             }
             int largeAreaDownloads = this.largeAreaDownloads;
             GameLoadingState.gameLoadingString = Translator.getText("IGUI_MP_DownloadedMapData", largeAreaDownloads, numRequests);
@@ -589,12 +576,11 @@ public final class WorldStreamer {
             if (downloads < largeAreaDownloads) {
                 received = now;
                 downloads = largeAreaDownloads;
-                retryCount = 0;
             }
             try {
                 Thread.sleep(100L);
             }
-            catch (InterruptedException interruptedException) {}
+            catch (InterruptedException v20) {}
         }
         DebugLog.log("Received " + this.largeAreaDownloads + " / " + numRequests + " chunks");
         this.requestingLargeArea = false;
@@ -639,28 +625,28 @@ public final class WorldStreamer {
         int offset = bb.getInt();
         int count = bb.getInt();
         for (int i = 0; i < this.pendingRequests.size(); ++i) {
-            ChunkRequest request2 = this.pendingRequests.get(i);
-            if ((request2.flagsWs & 1) != 0) {
+            request = this.pendingRequests.get(i);
+            if ((request.flagsWs & 1) != 0) {
                 this.pendingRequests.remove(i--);
-                request2.flagsUdp |= 0x10;
+                request.flagsUdp |= 0x10;
                 continue;
             }
-            if (request2.requestNumber != requestNumber) continue;
-            if (request2.bb == null) {
-                request2.bb = this.getByteBuffer(fileSize);
+            if (request.requestNumber != requestNumber) continue;
+            if (request.bb == null) {
+                request.bb = this.getByteBuffer(fileSize);
             }
-            System.arraycopy(bb.array(), bb.position(), request2.bb.array(), offset, count);
-            if (request2.partsReceived == null) {
-                request2.partsReceived = new boolean[numChunks];
+            System.arraycopy(bb.array(), bb.position(), request.bb.array(), offset, count);
+            if (request.partsReceived == null) {
+                request.partsReceived = new boolean[numChunks];
             }
-            request2.partsReceived[chunkIndex] = true;
-            if (!request2.isReceived()) break;
+            request.partsReceived[chunkIndex] = true;
+            if (!request.isReceived()) break;
             if (this.networkFileDebug) {
-                DebugLog.NetworkFileDebug.debugln("received all parts for " + request2.chunk.wx + "," + request2.chunk.wy);
+                DebugLog.NetworkFileDebug.debugln("received all parts for " + request.chunk.wx + "," + request.chunk.wy);
             }
-            request2.bb.position(fileSize);
+            request.bb.position(fileSize);
             this.pendingRequests.remove(i);
-            request2.flagsUdp |= 0x10;
+            request.flagsUdp |= 0x10;
             if (!this.requestingLargeArea) break;
             ++this.largeAreaDownloads;
             break;
@@ -678,21 +664,21 @@ public final class WorldStreamer {
             int requestNumber = bb.getInt();
             boolean sameOnServer = bb.get() == 1;
             for (int i = 0; i < this.pendingRequests.size(); ++i) {
-                ChunkRequest request2 = this.pendingRequests.get(i);
-                if ((request2.flagsWs & 1) != 0) {
+                request = this.pendingRequests.get(i);
+                if ((request.flagsWs & 1) != 0) {
                     this.pendingRequests.remove(i--);
-                    request2.flagsUdp |= 0x10;
+                    request.flagsUdp |= 0x10;
                     continue;
                 }
-                if (request2.requestNumber != requestNumber) continue;
+                if (request.requestNumber != requestNumber) continue;
                 if (this.networkFileDebug) {
-                    DebugLog.NetworkFileDebug.debugln("NotRequiredInZip " + request2.chunk.wx + "," + request2.chunk.wy + " delete=" + !sameOnServer);
+                    DebugLog.NetworkFileDebug.debugln("NotRequiredInZip " + request.chunk.wx + "," + request.chunk.wy + " delete=" + !sameOnServer);
                 }
                 if (!sameOnServer) {
-                    request2.flagsUdp |= 4;
+                    request.flagsUdp |= 4;
                 }
                 this.pendingRequests.remove(i);
-                request2.flagsUdp |= 0x10;
+                request.flagsUdp |= 0x10;
                 if (!this.requestingLargeArea) continue block1;
                 ++this.largeAreaDownloads;
                 continue block1;
@@ -700,7 +686,7 @@ public final class WorldStreamer {
         }
     }
 
-    private void compare(ChunkRequest request, ByteBuffer requestBB, File file) throws IOException {
+    private void compare(ChunkRequest request, ByteBuffer requestBB, File file) {
         IsoChunk chunkDownloaded = IsoChunkMap.chunkStore.poll();
         if (chunkDownloaded == null) {
             chunkDownloaded = new IsoChunk(IsoWorld.instance.getCell());
