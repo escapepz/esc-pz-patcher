@@ -561,13 +561,18 @@ public final class WorldStreamer {
         long received = start = System.currentTimeMillis();
         int seconds = 0;
         int downloads = 0;
+        int retryCount = 0;
+        final int MAX_RETRIES = 10;
         while (this.isBusy()) {
             long now = System.currentTimeMillis();
             if (now - received > 60000L) {
-                DebugLog.log("map download from server timed out");
-            }
-            if (now - received > 600000L) {
-                DebugLog.log("map download timed out after 10 minutes");
+                ++retryCount;
+                DebugLog.log("map download timeout: retry " + retryCount + "/" + MAX_RETRIES);
+                if (retryCount >= MAX_RETRIES) {
+                    GameMapDownloadFailed = true;
+                    throw new IOException("map download from server timed out after " + MAX_RETRIES + " retries");
+                }
+                received = now;
             }
             int largeAreaDownloads = this.largeAreaDownloads;
             GameLoadingState.gameLoadingString = Translator.getText("IGUI_MP_DownloadedMapData", largeAreaDownloads, numRequests);
@@ -579,6 +584,7 @@ public final class WorldStreamer {
             if (downloads < largeAreaDownloads) {
                 received = now;
                 downloads = largeAreaDownloads;
+                retryCount = 0;
             }
             try {
                 Thread.sleep(100L);
