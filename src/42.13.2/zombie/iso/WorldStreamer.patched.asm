@@ -2245,7 +2245,8 @@
     .method public requestLargeAreaZip (III)V {
         parameters: { this, wx, wy, range },
         exceptions: { 
-            { AP, AQ, AR, Ljava/lang/InterruptedException; }
+            { AL, AM, AN, Ljava/lang/InterruptedException; }, 
+            { AZ, BA, BB, Ljava/lang/InterruptedException; }
          },
         code: {
         A: 
@@ -2391,44 +2392,95 @@
             istore downloads
         AA: 
             line 564
-            aload this
-            invokevirtual zombie/iso/WorldStreamer.isBusy ()Z
-            ifeq AT
+            iconst_0 
+            istore retryCount
         AB: 
             line 565
-            invokestatic java/lang/System.currentTimeMillis ()J
-            lstore now
+            bipush 10
+            istore MAX_RETRIES
         AC: 
             line 566
+            aload this
+            invokevirtual zombie/iso/WorldStreamer.isBusy ()Z
+            ifeq BD
+        AD: 
+            line 567
+            invokestatic java/lang/System.currentTimeMillis ()J
+            lstore now
+        AE: 
+            line 568
             lload now
             lload received
             lsub 
             ldc 60000L
             lcmp 
-            ifle AE
-        AD: 
-            line 567
-            ldc "map download from server timed out"
-            invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
-        AE: 
-            line 569
-            lload now
-            lload received
-            lsub 
-            ldc 600000L
-            lcmp 
-            ifle AG
+            ifle AP
         AF: 
-            line 570
-            ldc "map download timed out after 10 minutes"
-            invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
+            line 569
+            iinc retryCount 1
         AG: 
+            line 570
+            iload retryCount
+            invokedynamic makeConcatWithConstants (I)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "map download timeout: retry \u0001/10" }
+            invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
+        AH: 
+            line 571
+            iload retryCount
+            bipush 10
+            if_icmplt AK
+        AI: 
             line 572
+            iconst_1 
+            putstatic zombie/gameStates/GameLoadingState.mapDownloadFailed Z
+        AJ: 
+            line 573
+            new java/io/IOException
+            dup 
+            ldc "map download from server timed out after 10 retries"
+            invokespecial java/io/IOException.<init> (Ljava/lang/String;)V
+            athrow 
+        AK: 
+            line 575
+            getstatic zombie/network/PacketTypes$PacketType.RequestLargeAreaZip Lzombie/network/PacketTypes$PacketType;
+            iconst_2 
+            anewarray java/lang/Object
+            dup 
+            iconst_0 
+            iload wx
+            invokestatic java/lang/Integer.valueOf (I)Ljava/lang/Integer;
+            aastore 
+            dup 
+            iconst_1 
+            iload wy
+            invokestatic java/lang/Integer.valueOf (I)Ljava/lang/Integer;
+            aastore 
+            invokestaticinterface zombie/network/packets/INetworkPacket.send (Lzombie/network/PacketTypes$PacketType;[Ljava/lang/Object;)V
+        AL: 
+            // try-start:   range=[AL-AM] handler=AN:java/lang/InterruptedException 
+            line 577
+            ldc 50L
+            iload retryCount
+            i2l 
+            lmul 
+            invokestatic java/lang/Thread.sleep (J)V
+        AM: 
+            // try-end:     range=[AL-AM] handler=AN:java/lang/InterruptedException 
+            line 579
+            goto AO
+        AN: 
+            // try-handler: range=[AL-AM] handler=AN:java/lang/InterruptedException 
+            astore v19
+        AO: 
+            line 580
+            lload now
+            lstore received
+        AP: 
+            line 582
             aload this
             getfield zombie/iso/WorldStreamer.largeAreaDownloads I
             istore largeAreaDownloads
-        AH: 
-            line 573
+        AQ: 
+            line 583
             ldc "IGUI_MP_DownloadedMapData"
             iload largeAreaDownloads
             invokestatic java/lang/Integer.valueOf (I)Ljava/lang/Integer;
@@ -2436,78 +2488,82 @@
             invokestatic java/lang/Integer.valueOf (I)Ljava/lang/Integer;
             invokestatic zombie/core/Translator.getText (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/String;
             putstatic zombie/gameStates/GameLoadingState.gameLoadingString Ljava/lang/String;
-        AI: 
-            line 574
+        AR: 
+            line 584
             lload now
             lload start
             lsub 
             lstore elapsed
-        AJ: 
-            line 575
+        AS: 
+            line 585
             lload elapsed
             ldc 1000L
             ldiv 
             iload seconds
             i2l 
             lcmp 
-            ifle AM
-        AK: 
-            line 576
+            ifle AV
+        AT: 
+            line 586
             iload largeAreaDownloads
             iload numRequests
             invokedynamic makeConcatWithConstants (II)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "Received \u0001 / \u0001 chunks" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
-        AL: 
-            line 577
+        AU: 
+            line 587
             lload elapsed
             ldc 1000L
             ldiv 
             l2i 
             istore seconds
-        AM: 
-            line 579
+        AV: 
+            line 589
             iload downloads
             iload largeAreaDownloads
-            if_icmpge AP
-        AN: 
-            line 580
+            if_icmpge AZ
+        AW: 
+            line 590
             lload now
             lstore received
-        AO: 
-            line 581
+        AX: 
+            line 591
             iload largeAreaDownloads
             istore downloads
-        AP: 
-            // try-start:   range=[AP-AQ] handler=AR:java/lang/InterruptedException 
-            line 584
+        AY: 
+            line 592
+            iconst_0 
+            istore retryCount
+        AZ: 
+            // try-start:   range=[AZ-BA] handler=BB:java/lang/InterruptedException 
+            line 595
             ldc 100L
             invokestatic java/lang/Thread.sleep (J)V
-        AQ: 
-            // try-end:     range=[AP-AQ] handler=AR:java/lang/InterruptedException 
-            line 586
-            goto AS
-        AR: 
-            // try-handler: range=[AP-AQ] handler=AR:java/lang/InterruptedException 
-            astore v20
-        AS: 
-            line 587
-            goto AA
-        AT: 
-            line 588
+        BA: 
+            // try-end:     range=[AZ-BA] handler=BB:java/lang/InterruptedException 
+            line 597
+            goto BC
+        BB: 
+            // try-handler: range=[AZ-BA] handler=BB:java/lang/InterruptedException 
+            astore v22
+        BC: 
+            line 598
+            goto AC
+        BD: 
+            line 599
             aload this
             getfield zombie/iso/WorldStreamer.largeAreaDownloads I
             iload numRequests
             invokedynamic makeConcatWithConstants (II)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "Received \u0001 / \u0001 chunks" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
-        AU: 
-            line 589
+        BE: 
+            line 600
             aload this
             iconst_0 
             putfield zombie/iso/WorldStreamer.requestingLargeArea Z
-        AV: 
-            line 590
+        BF: 
+            line 601
             return 
-        AW: 
+        BG: 
         }
     }
 
@@ -2515,15 +2571,15 @@
         parameters: { this },
         code: {
         A: 
-            line 593
+            line 604
             aload this
             getfield zombie/iso/WorldStreamer.requestingLargeArea Z
             ifeq C
         B: 
-            line 594
+            line 605
             return 
         C: 
-            line 596
+            line 607
             iconst_0 
             istore i
         D: 
@@ -2533,7 +2589,7 @@
             invokevirtual java/util/ArrayList.size ()I
             if_icmpge J
         E: 
-            line 597
+            line 608
             aload this
             getfield zombie/iso/WorldStreamer.pendingRequests1 Ljava/util/ArrayList;
             iload i
@@ -2541,7 +2597,7 @@
             checkcast zombie/iso/WorldStreamer$ChunkRequest
             astore request
         F: 
-            line 598
+            line 609
             aload request
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsWs I
             iconst_1 
@@ -2554,7 +2610,7 @@
             ifne G
             goto I
         G: 
-            line 599
+            line 610
             aload request
             dup 
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsWs I
@@ -2562,18 +2618,18 @@
             ior 
             putfield zombie/iso/WorldStreamer$ChunkRequest.flagsWs I
         H: 
-            line 600
+            line 611
             aload this
             getfield zombie/iso/WorldStreamer.waitingToCancelQ Ljava/util/concurrent/ConcurrentLinkedQueue;
             aload request
             invokevirtual java/util/concurrent/ConcurrentLinkedQueue.add (Ljava/lang/Object;)Z
             pop 
         I: 
-            line 596
+            line 607
             iinc i 1
             goto D
         J: 
-            line 602
+            line 613
             return 
         K: 
         }
@@ -2583,11 +2639,11 @@
         parameters: { this },
         code: {
         A: 
-            line 605
+            line 616
             invokestatic java/lang/System.currentTimeMillis ()J
             lstore time
         B: 
-            line 606
+            line 617
             iconst_0 
             istore i
         C: 
@@ -2597,7 +2653,7 @@
             invokevirtual java/util/ArrayList.size ()I
             if_icmpge L
         D: 
-            line 607
+            line 618
             aload this
             getfield zombie/iso/WorldStreamer.pendingRequests1 Ljava/util/ArrayList;
             iload i
@@ -2605,7 +2661,7 @@
             checkcast zombie/iso/WorldStreamer$ChunkRequest
             astore request
         E: 
-            line 608
+            line 619
             aload request
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsWs I
             iconst_1 
@@ -2620,12 +2676,12 @@
             iflt F
             goto K
         F: 
-            line 609
+            line 620
             aload this
             getfield zombie/iso/WorldStreamer.networkFileDebug Z
             ifeq H
         G: 
-            line 610
+            line 621
             getstatic zombie/debug/DebugLog.NetworkFileDebug Lzombie/debug/DebugLogStream;
             aload request
             getfield zombie/iso/WorldStreamer$ChunkRequest.chunk Lzombie/iso/IsoChunk;
@@ -2636,7 +2692,7 @@
             invokedynamic makeConcatWithConstants (II)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "chunk request timed out \u0001,\u0001" }
             invokevirtual zombie/debug/DebugLogStream.debugln (Ljava/lang/Object;)V
         H: 
-            line 612
+            line 623
             aload this
             getfield zombie/iso/WorldStreamer.chunkRequests1 Ljava/util/ArrayList;
             aload request
@@ -2644,7 +2700,7 @@
             invokevirtual java/util/ArrayList.add (Ljava/lang/Object;)Z
             pop 
         I: 
-            line 613
+            line 624
             aload request
             dup 
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsWs I
@@ -2652,7 +2708,7 @@
             ior 
             putfield zombie/iso/WorldStreamer$ChunkRequest.flagsWs I
         J: 
-            line 614
+            line 625
             aload request
             dup 
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsMain I
@@ -2660,11 +2716,11 @@
             ior 
             putfield zombie/iso/WorldStreamer$ChunkRequest.flagsMain I
         K: 
-            line 606
+            line 617
             iinc i 1
             goto C
         L: 
-            line 616
+            line 627
             return 
         M: 
         }
@@ -2674,25 +2730,25 @@
         parameters: { this, bb },
         code: {
         A: 
-            line 619
+            line 630
             aload this
             getfield zombie/iso/WorldStreamer.sentRequests Ljava/util/concurrent/ConcurrentLinkedQueue;
             invokevirtual java/util/concurrent/ConcurrentLinkedQueue.poll ()Ljava/lang/Object;
             checkcast zombie/iso/WorldStreamer$ChunkRequest
             astore request
         B: 
-            line 620
+            line 631
             aload request
             ifnull E
         C: 
-            line 621
+            line 632
             aload this
             getfield zombie/iso/WorldStreamer.pendingRequests Ljava/util/ArrayList;
             aload request
             invokevirtual java/util/ArrayList.add (Ljava/lang/Object;)Z
             pop 
         D: 
-            line 622
+            line 633
             aload this
             getfield zombie/iso/WorldStreamer.sentRequests Ljava/util/concurrent/ConcurrentLinkedQueue;
             invokevirtual java/util/concurrent/ConcurrentLinkedQueue.poll ()Ljava/lang/Object;
@@ -2700,37 +2756,37 @@
             astore request
             goto B
         E: 
-            line 624
+            line 635
             aload bb
             invokevirtual java/nio/ByteBuffer.getInt ()I
             istore requestNumber
         F: 
-            line 625
+            line 636
             aload bb
             invokevirtual java/nio/ByteBuffer.getInt ()I
             istore numChunks
         G: 
-            line 626
+            line 637
             aload bb
             invokevirtual java/nio/ByteBuffer.getInt ()I
             istore chunkIndex
         H: 
-            line 627
+            line 638
             aload bb
             invokevirtual java/nio/ByteBuffer.getInt ()I
             istore fileSize
         I: 
-            line 628
+            line 639
             aload bb
             invokevirtual java/nio/ByteBuffer.getInt ()I
             istore offset
         J: 
-            line 629
+            line 640
             aload bb
             invokevirtual java/nio/ByteBuffer.getInt ()I
             istore count
         K: 
-            line 630
+            line 641
             iconst_0 
             istore i
         L: 
@@ -2740,7 +2796,7 @@
             invokevirtual java/util/ArrayList.size ()I
             if_icmpge AI
         M: 
-            line 631
+            line 642
             aload this
             getfield zombie/iso/WorldStreamer.pendingRequests Ljava/util/ArrayList;
             iload i
@@ -2748,14 +2804,14 @@
             checkcast zombie/iso/WorldStreamer$ChunkRequest
             astore request2
         N: 
-            line 632
+            line 643
             aload request2
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsWs I
             iconst_1 
             iand 
             ifeq R
         O: 
-            line 633
+            line 644
             aload this
             getfield zombie/iso/WorldStreamer.pendingRequests Ljava/util/ArrayList;
             iload i
@@ -2763,7 +2819,7 @@
             invokevirtual java/util/ArrayList.remove (I)Ljava/lang/Object;
             pop 
         P: 
-            line 634
+            line 645
             aload request2
             dup 
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsUdp I
@@ -2771,29 +2827,29 @@
             ior 
             putfield zombie/iso/WorldStreamer$ChunkRequest.flagsUdp I
         Q: 
-            line 635
+            line 646
             goto AH
         R: 
-            line 637
+            line 648
             aload request2
             getfield zombie/iso/WorldStreamer$ChunkRequest.requestNumber I
             iload requestNumber
             if_icmpeq S
             goto AH
         S: 
-            line 638
+            line 649
             aload request2
             getfield zombie/iso/WorldStreamer$ChunkRequest.bb Ljava/nio/ByteBuffer;
             ifnonnull U
         T: 
-            line 639
+            line 650
             aload request2
             aload this
             iload fileSize
             invokevirtual zombie/iso/WorldStreamer.getByteBuffer (I)Ljava/nio/ByteBuffer;
             putfield zombie/iso/WorldStreamer$ChunkRequest.bb Ljava/nio/ByteBuffer;
         U: 
-            line 641
+            line 652
             aload bb
             invokevirtual java/nio/ByteBuffer.array ()[B
             aload bb
@@ -2805,36 +2861,36 @@
             iload count
             invokestatic java/lang/System.arraycopy (Ljava/lang/Object;ILjava/lang/Object;II)V
         V: 
-            line 642
+            line 653
             aload request2
             getfield zombie/iso/WorldStreamer$ChunkRequest.partsReceived [Z
             ifnonnull X
         W: 
-            line 643
+            line 654
             aload request2
             iload numChunks
             newarray boolean
             putfield zombie/iso/WorldStreamer$ChunkRequest.partsReceived [Z
         X: 
-            line 645
+            line 656
             aload request2
             getfield zombie/iso/WorldStreamer$ChunkRequest.partsReceived [Z
             iload chunkIndex
             iconst_1 
             bastore 
         Y: 
-            line 646
+            line 657
             aload request2
             invokevirtual zombie/iso/WorldStreamer$ChunkRequest.isReceived ()Z
             ifne Z
             goto AI
         Z: 
-            line 647
+            line 658
             aload this
             getfield zombie/iso/WorldStreamer.networkFileDebug Z
             ifeq AB
         AA: 
-            line 648
+            line 659
             getstatic zombie/debug/DebugLog.NetworkFileDebug Lzombie/debug/DebugLogStream;
             aload request2
             getfield zombie/iso/WorldStreamer$ChunkRequest.chunk Lzombie/iso/IsoChunk;
@@ -2845,21 +2901,21 @@
             invokedynamic makeConcatWithConstants (II)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "received all parts for \u0001,\u0001" }
             invokevirtual zombie/debug/DebugLogStream.debugln (Ljava/lang/Object;)V
         AB: 
-            line 650
+            line 661
             aload request2
             getfield zombie/iso/WorldStreamer$ChunkRequest.bb Ljava/nio/ByteBuffer;
             iload fileSize
             invokevirtual java/nio/ByteBuffer.position (I)Ljava/nio/ByteBuffer;
             pop 
         AC: 
-            line 651
+            line 662
             aload this
             getfield zombie/iso/WorldStreamer.pendingRequests Ljava/util/ArrayList;
             iload i
             invokevirtual java/util/ArrayList.remove (I)Ljava/lang/Object;
             pop 
         AD: 
-            line 652
+            line 663
             aload request2
             dup 
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsUdp I
@@ -2867,13 +2923,13 @@
             ior 
             putfield zombie/iso/WorldStreamer$ChunkRequest.flagsUdp I
         AE: 
-            line 653
+            line 664
             aload this
             getfield zombie/iso/WorldStreamer.requestingLargeArea Z
             ifne AF
             goto AI
         AF: 
-            line 654
+            line 665
             aload this
             dup 
             getfield zombie/iso/WorldStreamer.largeAreaDownloads I
@@ -2881,14 +2937,14 @@
             iadd 
             putfield zombie/iso/WorldStreamer.largeAreaDownloads I
         AG: 
-            line 655
+            line 666
             goto AI
         AH: 
-            line 630
+            line 641
             iinc i 1
             goto L
         AI: 
-            line 657
+            line 668
             return 
         AJ: 
         }
@@ -2898,25 +2954,25 @@
         parameters: { this, bb },
         code: {
         A: 
-            line 660
+            line 671
             aload this
             getfield zombie/iso/WorldStreamer.sentRequests Ljava/util/concurrent/ConcurrentLinkedQueue;
             invokevirtual java/util/concurrent/ConcurrentLinkedQueue.poll ()Ljava/lang/Object;
             checkcast zombie/iso/WorldStreamer$ChunkRequest
             astore request
         B: 
-            line 661
+            line 672
             aload request
             ifnull E
         C: 
-            line 662
+            line 673
             aload this
             getfield zombie/iso/WorldStreamer.pendingRequests Ljava/util/ArrayList;
             aload request
             invokevirtual java/util/ArrayList.add (Ljava/lang/Object;)Z
             pop 
         D: 
-            line 663
+            line 674
             aload this
             getfield zombie/iso/WorldStreamer.sentRequests Ljava/util/concurrent/ConcurrentLinkedQueue;
             invokevirtual java/util/concurrent/ConcurrentLinkedQueue.poll ()Ljava/lang/Object;
@@ -2924,12 +2980,12 @@
             astore request
             goto B
         E: 
-            line 665
+            line 676
             aload bb
             invokevirtual java/nio/ByteBuffer.getInt ()I
             istore count
         F: 
-            line 666
+            line 677
             iconst_0 
             istore n
         G: 
@@ -2937,12 +2993,12 @@
             iload count
             if_icmpge AG
         H: 
-            line 667
+            line 678
             aload bb
             invokevirtual java/nio/ByteBuffer.getInt ()I
             istore requestNumber
         I: 
-            line 668
+            line 679
             aload bb
             invokevirtual java/nio/ByteBuffer.get ()B
             iconst_1 
@@ -2954,7 +3010,7 @@
         K: 
             istore sameOnServer
         L: 
-            line 669
+            line 680
             iconst_0 
             istore i
         M: 
@@ -2964,7 +3020,7 @@
             invokevirtual java/util/ArrayList.size ()I
             if_icmpge AF
         N: 
-            line 670
+            line 681
             aload this
             getfield zombie/iso/WorldStreamer.pendingRequests Ljava/util/ArrayList;
             iload i
@@ -2972,14 +3028,14 @@
             checkcast zombie/iso/WorldStreamer$ChunkRequest
             astore request2
         O: 
-            line 671
+            line 682
             aload request2
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsWs I
             iconst_1 
             iand 
             ifeq S
         P: 
-            line 672
+            line 683
             aload this
             getfield zombie/iso/WorldStreamer.pendingRequests Ljava/util/ArrayList;
             iload i
@@ -2987,7 +3043,7 @@
             invokevirtual java/util/ArrayList.remove (I)Ljava/lang/Object;
             pop 
         Q: 
-            line 673
+            line 684
             aload request2
             dup 
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsUdp I
@@ -2995,22 +3051,22 @@
             ior 
             putfield zombie/iso/WorldStreamer$ChunkRequest.flagsUdp I
         R: 
-            line 674
+            line 685
             goto AE
         S: 
-            line 676
+            line 687
             aload request2
             getfield zombie/iso/WorldStreamer$ChunkRequest.requestNumber I
             iload requestNumber
             if_icmpeq T
             goto AE
         T: 
-            line 677
+            line 688
             aload this
             getfield zombie/iso/WorldStreamer.networkFileDebug Z
             ifeq X
         U: 
-            line 678
+            line 689
             getstatic zombie/debug/DebugLog.NetworkFileDebug Lzombie/debug/DebugLogStream;
             aload request2
             getfield zombie/iso/WorldStreamer$ChunkRequest.chunk Lzombie/iso/IsoChunk;
@@ -3028,11 +3084,11 @@
             invokedynamic makeConcatWithConstants (IIZ)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "NotRequiredInZip \u0001,\u0001 delete=\u0001" }
             invokevirtual zombie/debug/DebugLogStream.debugln (Ljava/lang/Object;)V
         X: 
-            line 680
+            line 691
             iload sameOnServer
             ifne Z
         Y: 
-            line 681
+            line 692
             aload request2
             dup 
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsUdp I
@@ -3040,14 +3096,14 @@
             ior 
             putfield zombie/iso/WorldStreamer$ChunkRequest.flagsUdp I
         Z: 
-            line 683
+            line 694
             aload this
             getfield zombie/iso/WorldStreamer.pendingRequests Ljava/util/ArrayList;
             iload i
             invokevirtual java/util/ArrayList.remove (I)Ljava/lang/Object;
             pop 
         AA: 
-            line 684
+            line 695
             aload request2
             dup 
             getfield zombie/iso/WorldStreamer$ChunkRequest.flagsUdp I
@@ -3055,13 +3111,13 @@
             ior 
             putfield zombie/iso/WorldStreamer$ChunkRequest.flagsUdp I
         AB: 
-            line 685
+            line 696
             aload this
             getfield zombie/iso/WorldStreamer.requestingLargeArea Z
             ifne AC
             goto AF
         AC: 
-            line 686
+            line 697
             aload this
             dup 
             getfield zombie/iso/WorldStreamer.largeAreaDownloads I
@@ -3069,18 +3125,18 @@
             iadd 
             putfield zombie/iso/WorldStreamer.largeAreaDownloads I
         AD: 
-            line 687
+            line 698
             goto AF
         AE: 
-            line 669
+            line 680
             iinc i 1
             goto M
         AF: 
-            line 666
+            line 677
             iinc n 1
             goto G
         AG: 
-            line 690
+            line 701
             return 
         AH: 
         }
@@ -3090,17 +3146,17 @@
         parameters: { this, request, requestBB, file },
         code: {
         A: 
-            line 693
+            line 704
             getstatic zombie/iso/IsoChunkMap.chunkStore Ljava/util/concurrent/ConcurrentLinkedQueue;
             invokevirtual java/util/concurrent/ConcurrentLinkedQueue.poll ()Ljava/lang/Object;
             checkcast zombie/iso/IsoChunk
             astore chunkDownloaded
         B: 
-            line 694
+            line 705
             aload chunkDownloaded
             ifnonnull D
         C: 
-            line 695
+            line 706
             new zombie/iso/IsoChunk
             dup 
             getstatic zombie/iso/IsoWorld.instance Lzombie/iso/IsoWorld;
@@ -3108,31 +3164,31 @@
             invokespecial zombie/iso/IsoChunk.<init> (Lzombie/iso/IsoCell;)V
             astore chunkDownloaded
         D: 
-            line 697
+            line 708
             aload chunkDownloaded
             aload request
             getfield zombie/iso/WorldStreamer$ChunkRequest.chunk Lzombie/iso/IsoChunk;
             getfield zombie/iso/IsoChunk.wx I
             putfield zombie/iso/IsoChunk.wx I
         E: 
-            line 698
+            line 709
             aload chunkDownloaded
             aload request
             getfield zombie/iso/WorldStreamer$ChunkRequest.chunk Lzombie/iso/IsoChunk;
             getfield zombie/iso/IsoChunk.wy I
             putfield zombie/iso/IsoChunk.wy I
         F: 
-            line 699
+            line 710
             getstatic zombie/iso/IsoChunkMap.chunkStore Ljava/util/concurrent/ConcurrentLinkedQueue;
             invokevirtual java/util/concurrent/ConcurrentLinkedQueue.poll ()Ljava/lang/Object;
             checkcast zombie/iso/IsoChunk
             astore chunkOnDisk
         G: 
-            line 700
+            line 711
             aload chunkOnDisk
             ifnonnull I
         H: 
-            line 701
+            line 712
             new zombie/iso/IsoChunk
             dup 
             getstatic zombie/iso/IsoWorld.instance Lzombie/iso/IsoWorld;
@@ -3140,32 +3196,32 @@
             invokespecial zombie/iso/IsoChunk.<init> (Lzombie/iso/IsoCell;)V
             astore chunkOnDisk
         I: 
-            line 703
+            line 714
             aload chunkOnDisk
             aload request
             getfield zombie/iso/WorldStreamer$ChunkRequest.chunk Lzombie/iso/IsoChunk;
             getfield zombie/iso/IsoChunk.wx I
             putfield zombie/iso/IsoChunk.wx I
         J: 
-            line 704
+            line 715
             aload chunkOnDisk
             aload request
             getfield zombie/iso/WorldStreamer$ChunkRequest.chunk Lzombie/iso/IsoChunk;
             getfield zombie/iso/IsoChunk.wy I
             putfield zombie/iso/IsoChunk.wy I
         K: 
-            line 705
+            line 716
             aload requestBB
             invokevirtual java/nio/ByteBuffer.position ()I
             istore position
         L: 
-            line 706
+            line 717
             aload requestBB
             iconst_0 
             invokevirtual java/nio/ByteBuffer.position (I)Ljava/nio/ByteBuffer;
             pop 
         M: 
-            line 707
+            line 718
             aload chunkDownloaded
             aload request
             getfield zombie/iso/WorldStreamer$ChunkRequest.chunk Lzombie/iso/IsoChunk;
@@ -3177,18 +3233,18 @@
             invokevirtual zombie/iso/IsoChunk.LoadFromBuffer (IILjava/nio/ByteBuffer;)Z
             pop 
         N: 
-            line 708
+            line 719
             aload requestBB
             iload position
             invokevirtual java/nio/ByteBuffer.position (I)Ljava/nio/ByteBuffer;
             pop 
         O: 
-            line 709
+            line 720
             aload this
             getfield zombie/iso/WorldStreamer.crc32 Ljava/util/zip/CRC32;
             invokevirtual java/util/zip/CRC32.reset ()V
         P: 
-            line 710
+            line 721
             aload this
             getfield zombie/iso/WorldStreamer.crc32 Ljava/util/zip/CRC32;
             aload requestBB
@@ -3197,7 +3253,7 @@
             iload position
             invokevirtual java/util/zip/CRC32.update ([BII)V
         Q: 
-            line 711
+            line 722
             aload this
             getfield zombie/iso/WorldStreamer.crc32 Ljava/util/zip/CRC32;
             invokevirtual java/util/zip/CRC32.getValue ()J
@@ -3211,28 +3267,28 @@
             invokedynamic makeConcatWithConstants (JJ)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "downloaded crc=\u0001 on-disk crc=\u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         R: 
-            line 712
+            line 723
             aload chunkOnDisk
             invokevirtual zombie/iso/IsoChunk.LoadFromDisk ()V
         S: 
-            line 713
+            line 724
             iload position
             aload file
             invokevirtual java/io/File.length ()J
             invokedynamic makeConcatWithConstants (IJ)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "downloaded size=\u0001 on-disk size=\u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         T: 
-            line 714
+            line 725
             aload this
             aload chunkDownloaded
             aload chunkOnDisk
             invokevirtual zombie/iso/WorldStreamer.compareChunks (Lzombie/iso/IsoChunk;Lzombie/iso/IsoChunk;)V
         U: 
-            line 715
+            line 726
             aload chunkDownloaded
             invokevirtual zombie/iso/IsoChunk.resetForStore ()V
         V: 
-            line 716
+            line 727
             getstatic zombie/iso/WorldStreamer.$assertionsDisabled Z
             ifne W
             getstatic zombie/iso/IsoChunkMap.chunkStore Ljava/util/concurrent/ConcurrentLinkedQueue;
@@ -3244,17 +3300,17 @@
             invokespecial java/lang/AssertionError.<init> ()V
             athrow 
         W: 
-            line 717
+            line 728
             getstatic zombie/iso/IsoChunkMap.chunkStore Ljava/util/concurrent/ConcurrentLinkedQueue;
             aload chunkDownloaded
             invokevirtual java/util/concurrent/ConcurrentLinkedQueue.add (Ljava/lang/Object;)Z
             pop 
         X: 
-            line 718
+            line 729
             aload chunkOnDisk
             invokevirtual zombie/iso/IsoChunk.resetForStore ()V
         Y: 
-            line 719
+            line 730
             getstatic zombie/iso/WorldStreamer.$assertionsDisabled Z
             ifne Z
             getstatic zombie/iso/IsoChunkMap.chunkStore Ljava/util/concurrent/ConcurrentLinkedQueue;
@@ -3266,13 +3322,13 @@
             invokespecial java/lang/AssertionError.<init> ()V
             athrow 
         Z: 
-            line 720
+            line 731
             getstatic zombie/iso/IsoChunkMap.chunkStore Ljava/util/concurrent/ConcurrentLinkedQueue;
             aload chunkOnDisk
             invokevirtual java/util/concurrent/ConcurrentLinkedQueue.add (Ljava/lang/Object;)Z
             pop 
         AA: 
-            line 721
+            line 732
             return 
         AB: 
         }
@@ -3285,7 +3341,7 @@
          },
         code: {
         A: 
-            line 724
+            line 735
             aload chunk1
             getfield zombie/iso/IsoChunk.wx I
             aload chunk1
@@ -3294,20 +3350,20 @@
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         B: 
             // try-start:   range=[B-N] handler=O:java/lang/Exception 
-            line 726
+            line 737
             aload this
             aload chunk1
             aload chunk2
             invokevirtual zombie/iso/WorldStreamer.compareErosion (Lzombie/iso/IsoChunk;Lzombie/iso/IsoChunk;)V
         C: 
-            line 727
+            line 738
             aload chunk1
             getfield zombie/iso/IsoChunk.lootRespawnHour I
             aload chunk2
             getfield zombie/iso/IsoChunk.lootRespawnHour I
             if_icmpeq E
         D: 
-            line 728
+            line 739
             aload chunk1
             getfield zombie/iso/IsoChunk.lootRespawnHour I
             aload chunk2
@@ -3315,7 +3371,7 @@
             invokedynamic makeConcatWithConstants (II)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "lootRespawnHour \u0001 != \u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         E: 
-            line 730
+            line 741
             iconst_0 
             istore y
         F: 
@@ -3323,7 +3379,7 @@
             bipush 8
             if_icmpge N
         G: 
-            line 731
+            line 742
             iconst_0 
             istore x
         H: 
@@ -3331,7 +3387,7 @@
             bipush 8
             if_icmpge M
         I: 
-            line 732
+            line 743
             aload chunk1
             iload x
             iload y
@@ -3339,7 +3395,7 @@
             invokevirtual zombie/iso/IsoChunk.getGridSquare (III)Lzombie/iso/IsoGridSquare;
             astore sq1
         J: 
-            line 733
+            line 744
             aload chunk2
             iload x
             iload y
@@ -3347,33 +3403,33 @@
             invokevirtual zombie/iso/IsoChunk.getGridSquare (III)Lzombie/iso/IsoGridSquare;
             astore sq2
         K: 
-            line 734
+            line 745
             aload this
             aload sq1
             aload sq2
             invokevirtual zombie/iso/WorldStreamer.compareSquares (Lzombie/iso/IsoGridSquare;Lzombie/iso/IsoGridSquare;)V
         L: 
-            line 731
+            line 742
             iinc x 1
             goto H
         M: 
-            line 730
+            line 741
             iinc y 1
             goto F
         N: 
             // try-end:     range=[B-N] handler=O:java/lang/Exception 
-            line 740
+            line 751
             goto Q
         O: 
             // try-handler: range=[B-N] handler=O:java/lang/Exception 
-            line 738
+            line 749
             astore ex
         P: 
-            line 739
+            line 750
             aload ex
             invokevirtual java/lang/Exception.printStackTrace ()V
         Q: 
-            line 741
+            line 752
             return 
         R: 
         }
@@ -3383,7 +3439,7 @@
         parameters: { this, chunk1, chunk2 },
         code: {
         A: 
-            line 744
+            line 755
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.init Z
@@ -3392,7 +3448,7 @@
             getfield zombie/erosion/ErosionData$Chunk.init Z
             if_icmpeq C
         B: 
-            line 745
+            line 756
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.init Z
@@ -3402,7 +3458,7 @@
             invokedynamic makeConcatWithConstants (ZZ)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "init \u0001 != \u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         C: 
-            line 747
+            line 758
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.eTickStamp I
@@ -3411,7 +3467,7 @@
             getfield zombie/erosion/ErosionData$Chunk.eTickStamp I
             if_icmpeq E
         D: 
-            line 748
+            line 759
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.eTickStamp I
@@ -3421,7 +3477,7 @@
             invokedynamic makeConcatWithConstants (II)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "eTickStamp \u0001 != \u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         E: 
-            line 750
+            line 761
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.moisture F
@@ -3431,7 +3487,7 @@
             fcmpl 
             ifeq G
         F: 
-            line 751
+            line 762
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.moisture F
@@ -3441,7 +3497,7 @@
             invokedynamic makeConcatWithConstants (FF)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "moisture \u0001 != \u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         G: 
-            line 753
+            line 764
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.minerals F
@@ -3451,7 +3507,7 @@
             fcmpl 
             ifeq I
         H: 
-            line 754
+            line 765
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.minerals F
@@ -3461,7 +3517,7 @@
             invokedynamic makeConcatWithConstants (FF)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "minerals \u0001 != \u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         I: 
-            line 756
+            line 767
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.epoch I
@@ -3470,7 +3526,7 @@
             getfield zombie/erosion/ErosionData$Chunk.epoch I
             if_icmpeq K
         J: 
-            line 757
+            line 768
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.epoch I
@@ -3480,7 +3536,7 @@
             invokedynamic makeConcatWithConstants (II)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "epoch \u0001 != \u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         K: 
-            line 759
+            line 770
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.soil I
@@ -3489,7 +3545,7 @@
             getfield zombie/erosion/ErosionData$Chunk.soil I
             if_icmpeq M
         L: 
-            line 760
+            line 771
             aload chunk1
             invokevirtual zombie/iso/IsoChunk.getErosionData ()Lzombie/erosion/ErosionData$Chunk;
             getfield zombie/erosion/ErosionData$Chunk.soil I
@@ -3499,7 +3555,7 @@
             invokedynamic makeConcatWithConstants (II)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "soil \u0001 != \u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         M: 
-            line 762
+            line 773
             return 
         N: 
         }
@@ -3512,65 +3568,65 @@
          },
         code: {
         A: 
-            line 765
+            line 776
             aload sq1
             ifnull B
             aload sq2
             ifnonnull E
         B: 
-            line 766
+            line 777
             aload sq1
             ifnonnull C
             aload sq2
             ifnull D
         C: 
-            line 767
+            line 778
             ldc "one square is null, the other isn\'t"
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         D: 
-            line 769
+            line 780
             return 
         E: 
             // try-start:   range=[E-BB] handler=BC:java/lang/Exception 
-            line 772
+            line 783
             aload this
             getfield zombie/iso/WorldStreamer.bb1 Ljava/nio/ByteBuffer;
             invokevirtual java/nio/ByteBuffer.clear ()Ljava/nio/ByteBuffer;
             pop 
         F: 
-            line 773
+            line 784
             aload sq1
             aload this
             getfield zombie/iso/WorldStreamer.bb1 Ljava/nio/ByteBuffer;
             aconst_null 
             invokevirtual zombie/iso/IsoGridSquare.save (Ljava/nio/ByteBuffer;Ljava/io/ObjectOutputStream;)V
         G: 
-            line 774
+            line 785
             aload this
             getfield zombie/iso/WorldStreamer.bb1 Ljava/nio/ByteBuffer;
             invokevirtual java/nio/ByteBuffer.flip ()Ljava/nio/ByteBuffer;
             pop 
         H: 
-            line 775
+            line 786
             aload this
             getfield zombie/iso/WorldStreamer.bb2 Ljava/nio/ByteBuffer;
             invokevirtual java/nio/ByteBuffer.clear ()Ljava/nio/ByteBuffer;
             pop 
         I: 
-            line 776
+            line 787
             aload sq2
             aload this
             getfield zombie/iso/WorldStreamer.bb2 Ljava/nio/ByteBuffer;
             aconst_null 
             invokevirtual zombie/iso/IsoGridSquare.save (Ljava/nio/ByteBuffer;Ljava/io/ObjectOutputStream;)V
         J: 
-            line 777
+            line 788
             aload this
             getfield zombie/iso/WorldStreamer.bb2 Ljava/nio/ByteBuffer;
             invokevirtual java/nio/ByteBuffer.flip ()Ljava/nio/ByteBuffer;
             pop 
         K: 
-            line 778
+            line 789
             aload this
             getfield zombie/iso/WorldStreamer.bb1 Ljava/nio/ByteBuffer;
             aload this
@@ -3578,15 +3634,15 @@
             invokevirtual java/nio/ByteBuffer.compareTo (Ljava/nio/ByteBuffer;)I
             ifeq BB
         L: 
-            line 780
+            line 791
             iconst_1 
             istore seasonMatch
         M: 
-            line 781
+            line 792
             iconst_m1 
             istore j
         N: 
-            line 782
+            line 793
             aload this
             getfield zombie/iso/WorldStreamer.bb1 Ljava/nio/ByteBuffer;
             invokevirtual java/nio/ByteBuffer.limit ()I
@@ -3595,7 +3651,7 @@
             invokevirtual java/nio/ByteBuffer.limit ()I
             if_icmpne AA
         O: 
-            line 783
+            line 794
             iconst_0 
             istore i
         P: 
@@ -3605,7 +3661,7 @@
             invokevirtual java/nio/ByteBuffer.limit ()I
             if_icmpge U
         Q: 
-            line 784
+            line 795
             aload this
             getfield zombie/iso/WorldStreamer.bb1 Ljava/nio/ByteBuffer;
             iload i
@@ -3617,18 +3673,18 @@
             if_icmpne R
             goto T
         R: 
-            line 785
+            line 796
             iload i
             istore j
         S: 
-            line 786
+            line 797
             goto U
         T: 
-            line 783
+            line 794
             iinc i 1
             goto P
         U: 
-            line 788
+            line 799
             iconst_0 
             istore r
         V: 
@@ -3639,7 +3695,7 @@
             invokevirtual java/util/ArrayList.size ()I
             if_icmpge AA
         W: 
-            line 789
+            line 800
             aload sq1
             invokevirtual zombie/iso/IsoGridSquare.getErosionData ()Lzombie/erosion/ErosionData$Square;
             getfield zombie/erosion/ErosionData$Square.regions Ljava/util/ArrayList;
@@ -3657,7 +3713,7 @@
             if_icmpne X
             goto Z
         X: 
-            line 790
+            line 801
             aload sq1
             invokevirtual zombie/iso/IsoGridSquare.getErosionData ()Lzombie/erosion/ErosionData$Square;
             getfield zombie/erosion/ErosionData$Square.regions Ljava/util/ArrayList;
@@ -3675,15 +3731,15 @@
             invokedynamic makeConcatWithConstants (II)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "season1=\u0001 season2=\u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         Y: 
-            line 791
+            line 802
             iconst_0 
             istore seasonMatch
         Z: 
-            line 788
+            line 799
             iinc r 1
             goto V
         AA: 
-            line 794
+            line 805
             aload sq1
             getfield zombie/iso/IsoGridSquare.x I
             aload sq1
@@ -3697,7 +3753,7 @@
             invokedynamic makeConcatWithConstants (IIIZI)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "square \u0001,\u0001 mismatch at \u0001 seasonMatch=\u0001 #regions=\u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         AB: 
-            line 795
+            line 806
             aload sq1
             invokevirtual zombie/iso/IsoGridSquare.getObjects ()Lzombie/util/list/PZArrayList;
             invokevirtual zombie/util/list/PZArrayList.size ()I
@@ -3706,7 +3762,7 @@
             invokevirtual zombie/util/list/PZArrayList.size ()I
             if_icmpne AU
         AC: 
-            line 796
+            line 807
             iconst_0 
             istore i
         AD: 
@@ -3716,7 +3772,7 @@
             invokevirtual zombie/util/list/PZArrayList.size ()I
             if_icmpge BB
         AE: 
-            line 797
+            line 808
             aload sq1
             invokevirtual zombie/iso/IsoGridSquare.getObjects ()Lzombie/util/list/PZArrayList;
             iload i
@@ -3724,7 +3780,7 @@
             checkcast zombie/iso/IsoObject
             astore obj1
         AF: 
-            line 798
+            line 809
             aload sq2
             invokevirtual zombie/iso/IsoGridSquare.getObjects ()Lzombie/util/list/PZArrayList;
             iload i
@@ -3732,43 +3788,43 @@
             checkcast zombie/iso/IsoObject
             astore obj2
         AG: 
-            line 799
+            line 810
             aload this
             getfield zombie/iso/WorldStreamer.bb1 Ljava/nio/ByteBuffer;
             invokevirtual java/nio/ByteBuffer.clear ()Ljava/nio/ByteBuffer;
             pop 
         AH: 
-            line 800
+            line 811
             aload obj1
             aload this
             getfield zombie/iso/WorldStreamer.bb1 Ljava/nio/ByteBuffer;
             invokevirtual zombie/iso/IsoObject.save (Ljava/nio/ByteBuffer;)V
         AI: 
-            line 801
+            line 812
             aload this
             getfield zombie/iso/WorldStreamer.bb1 Ljava/nio/ByteBuffer;
             invokevirtual java/nio/ByteBuffer.flip ()Ljava/nio/ByteBuffer;
             pop 
         AJ: 
-            line 802
+            line 813
             aload this
             getfield zombie/iso/WorldStreamer.bb2 Ljava/nio/ByteBuffer;
             invokevirtual java/nio/ByteBuffer.clear ()Ljava/nio/ByteBuffer;
             pop 
         AK: 
-            line 803
+            line 814
             aload obj2
             aload this
             getfield zombie/iso/WorldStreamer.bb2 Ljava/nio/ByteBuffer;
             invokevirtual zombie/iso/IsoObject.save (Ljava/nio/ByteBuffer;)V
         AL: 
-            line 804
+            line 815
             aload this
             getfield zombie/iso/WorldStreamer.bb2 Ljava/nio/ByteBuffer;
             invokevirtual java/nio/ByteBuffer.flip ()Ljava/nio/ByteBuffer;
             pop 
         AM: 
-            line 805
+            line 816
             aload this
             getfield zombie/iso/WorldStreamer.bb1 Ljava/nio/ByteBuffer;
             aload this
@@ -3777,7 +3833,7 @@
             ifne AN
             goto AT
         AN: 
-            line 806
+            line 817
             aload obj1
             invokevirtual java/lang/Object.getClass ()Ljava/lang/Class;
             invokevirtual java/lang/Class.getName ()Ljava/lang/String;
@@ -3796,7 +3852,7 @@
             invokedynamic makeConcatWithConstants (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "  1: \u0001 \u0001 \u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         AQ: 
-            line 807
+            line 818
             aload obj2
             invokevirtual java/lang/Object.getClass ()Ljava/lang/Class;
             invokevirtual java/lang/Class.getName ()Ljava/lang/String;
@@ -3815,11 +3871,11 @@
             invokedynamic makeConcatWithConstants (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "  2: \u0001 \u0001 \u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         AT: 
-            line 796
+            line 807
             iinc i 1
             goto AD
         AU: 
-            line 810
+            line 821
             iconst_0 
             istore i
         AV: 
@@ -3829,7 +3885,7 @@
             invokevirtual zombie/util/list/PZArrayList.size ()I
             if_icmpge BB
         AW: 
-            line 811
+            line 822
             aload sq1
             invokevirtual zombie/iso/IsoGridSquare.getObjects ()Lzombie/util/list/PZArrayList;
             iload i
@@ -3837,7 +3893,7 @@
             checkcast zombie/iso/IsoObject
             astore obj
         AX: 
-            line 812
+            line 823
             aload obj
             invokevirtual java/lang/Object.getClass ()Ljava/lang/Class;
             invokevirtual java/lang/Class.getName ()Ljava/lang/String;
@@ -3856,23 +3912,23 @@
             invokedynamic makeConcatWithConstants (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "  \u0001 \u0001 \u0001" }
             invokestatic zombie/debug/DebugLog.log (Ljava/lang/String;)V
         BA: 
-            line 810
+            line 821
             iinc i 1
             goto AV
         BB: 
             // try-end:     range=[E-BB] handler=BC:java/lang/Exception 
-            line 819
+            line 830
             goto BE
         BC: 
             // try-handler: range=[E-BB] handler=BC:java/lang/Exception 
-            line 817
+            line 828
             astore ex
         BD: 
-            line 818
+            line 829
             aload ex
             invokevirtual java/lang/Exception.printStackTrace ()V
         BE: 
-            line 820
+            line 831
             return 
         BF: 
         }

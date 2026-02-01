@@ -569,9 +569,14 @@ public final class WorldStreamer {
                 ++retryCount;
                 DebugLog.log("map download timeout: retry " + retryCount + "/" + MAX_RETRIES);
                 if (retryCount >= MAX_RETRIES) {
-                    GameMapDownloadFailed = true;
+                    GameLoadingState.mapDownloadFailed = true;
                     throw new IOException("map download from server timed out after " + MAX_RETRIES + " retries");
                 }
+                INetworkPacket.send(PacketTypes.PacketType.RequestLargeAreaZip, wx, wy);
+                try {
+                    Thread.sleep(50L * retryCount);
+                }
+                catch (InterruptedException interruptedException) {}
                 received = now;
             }
             int largeAreaDownloads = this.largeAreaDownloads;
