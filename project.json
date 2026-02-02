@@ -1,17 +1,28 @@
 {
     "$schema": "https://gist.githubusercontent.com/hashtafak/1ec0f9800f4e86c74ac3f102946c88ae/raw/9168dcb04b03177e78d304aa20a56bd3fe85ba57/pzstudio.schema.json",
     "title": "ESC PZ Patcher",
-    "authors": ["escapepz"],
+    "authors": [
+        "escapepz"
+    ],
     "workshop": {
         "id": 3657481516,
         "visibility": "unlisted",
-        "tags": ["Build 41", "Build 42", "Multiplayer", "Misc"],
+        "tags": [
+            "Build 41",
+            "Build 42",
+            "Multiplayer",
+            "Misc"
+        ],
         "excludes": []
     },
     "mods": {
         "esc_pz_patcher": {
             "name": "ESC PZ Patcher",
             "description": "Just a java class patcher for PZ"
+        },
+        "test": {
+            "name": "test",
+            "description": ""
         }
     }
 }

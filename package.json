@@ -3,6 +3,8 @@
         "clean": "pzstudio clean",
         "build": "pzstudio clean && pzstudio build",
         "watch": "pzstudio clean && pzstudio build && pzstudio watch",
-        "update": "pzstudio update"
+        "update": "pzstudio update",
+        "setup:nonsteam": "mklink /J \"C:\\ZomboidClient1\\mods\\esc_pz_patcher\" \"%CD%\\esc_pz_patcher\"",
+        "experimental:setup:nonsteam:test": "mklink /J \"C:\\ZomboidClient1\\mods\\test\" \"%CD%\\test\""
     }
 }

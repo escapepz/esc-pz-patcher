@@ -1,0 +1,5 @@
+UI_EN = {
+    UI_options_RenderLessZombies_title = "僵尸渲染优化",
+    UI_options_RenderLessZombieCount = "最大僵尸渲染数量",
+    UI_options_RenderLessZombieCount_tooltip = "设置最大僵尸渲染数量，超过此数量的僵尸将不会被渲染。<br>必须输入数字，重新进入存档生效",
+}
