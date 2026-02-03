@@ -45,6 +45,7 @@ local function ChunkGridConfig()
 	-- Apply function - called when player clicks Apply
 	options.apply = function()
 		patcher.setDynamicChunkGridWidth()
+		patcher.setRenderLessZombieCount()
 	end
 end
 

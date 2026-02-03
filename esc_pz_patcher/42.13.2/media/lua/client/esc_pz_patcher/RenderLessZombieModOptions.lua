@@ -18,6 +18,7 @@ local function RenderLessZombieConfig()
 
 	options.apply = function()
 		patcher.setRenderLessZombieCount()
+		patcher.setDynamicChunkGridWidth()
 	end
 end
 

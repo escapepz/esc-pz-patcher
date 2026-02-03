@@ -35,9 +35,9 @@ esc_pz_patcher.setRenderLessZombieCount = function()
 		IsoWorld.setDefaultMaxRenderCount(renderLessZombieCount)
 	end)
 	if success then
-		safeLog("[setRenderLessZombieCount] setDefaultMaxRenderCount: " .. tostring(renderLessZombieCount))
+		safeLog("[setRenderLessZombieCount] " .. tostring(renderLessZombieCount))
 	else
-		safeLog("[setRenderLessZombieCount] ERROR: Failed to set default: " .. tostring(err))
+		safeLog("[setRenderLessZombieCount] ERROR: " .. tostring(err))
 	end
 end
 
@@ -67,7 +67,7 @@ esc_pz_patcher.setDynamicChunkGridWidth = function()
 			if success then
 				safeLog("[ChunkGridConfig] Set to DYNAMIC mode (auto-detect)")
 			else
-				safeLog("[ChunkGridConfig] ERROR: Failed to reset chunk grid: " .. tostring(err))
+				safeLog("[ChunkGridConfig] ERROR: " .. tostring(err))
 			end
 		else
 			-- Fixed size mode: set specific grid width
@@ -78,9 +78,7 @@ esc_pz_patcher.setDynamicChunkGridWidth = function()
 			if success then
 				safeLog("[ChunkGridConfig] Set chunk grid to FIXED: " .. selectedSize .. "x" .. selectedSize)
 			else
-				safeLog(
-					"[ChunkGridConfig] ERROR: Failed to set chunk grid to " .. selectedSize .. ": " .. tostring(err)
-				)
+				safeLog("[ChunkGridConfig] ERROR: " .. tostring(err))
 			end
 		end
 	end
