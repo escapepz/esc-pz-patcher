@@ -6,7 +6,7 @@ Events.OnCreatePlayer.Add(function()
 	patcher.setChunkLoadDebugOption()
 end)
 
-local core = getCore()
+-- local core = getCore()
 
 -- local defaultZoomLevels = core:getDefaultZoomLevels()
 -- safeLog(tostring(defaultZoomLevels))

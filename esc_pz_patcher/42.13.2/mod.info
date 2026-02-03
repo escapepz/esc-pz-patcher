@@ -1,5 +1,5 @@
 id=esc_pz_patcher
 name=ESC PZ Patcher
-description=Just a java class patcher for PZ
+description=A java class and lua patcher for PZ
 poster=poster.png
 icon=icon.png

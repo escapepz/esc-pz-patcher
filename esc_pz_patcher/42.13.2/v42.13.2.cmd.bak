@@ -26,6 +26,7 @@ set "DEFAULT_GAME_PATH=C:\Program Files (x86)\Steam\steamapps\common\ProjectZomb
 set "FILES_TO_PATCH="
 set "FILES_TO_PATCH=%FILES_TO_PATCH% zombie/radio/ZomboidRadio.class"
 set "FILES_TO_PATCH=%FILES_TO_PATCH% zombie/iso/WorldStreamer.class"
+set "FILES_TO_PATCH=%FILES_TO_PATCH% zombie/iso/IsoWorld.class"
 set "FILES_TO_PATCH=%FILES_TO_PATCH% zombie/core/textures/MultiTextureFBO2.class"
 set "FILES_TO_PATCH=%FILES_TO_PATCH% zombie/characters/PlayerCraftHistory.class"
 :: ==========================================
@@ -116,9 +117,11 @@ goto :EOF
 :RUN_7ZIP
 echo [PROCESS] Updating JAR via 7-Zip...
 for %%f in (!FILES_TO_PATCH!) do (
+    echo [PROCESS] Patching %%f
     set "F=%%f"
     set "F=!F:/=\!"
     "!SEVENZIP_PATH!" a "!JAR_FILE!" "!F!"
+    echo =============
 )
 goto :EOF
 

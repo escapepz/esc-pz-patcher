@@ -1,15 +1,22 @@
 [h1]ESC PZ Patcher[/h1]
 
-[i]Note: This Workshop version is provided for quick download and easy access to the latest patcher scripts.[/i]
+[i]Note: [strike]This Workshop version is provided for quick download and easy access to the latest patcher scripts.[/strike][/i]
+[b]Now requires to be enabled in-game to use certain engine-level methods.[/b]
 
 [h2]Features & Fixes[/h2]
 [b]ESC PZ Patcher[/b] is a technical utility designed to patch Project Zomboid's core Java classes ([b]projectzomboid.jar[/b]). It addresses several engine-level limitations and introduces specific fixes:
 
 [list]
-[*] [b]Chunk Loading:[/b] Patches the chunk downloader on login to remove timeouts, helping players with slow or unstable connections avoid the "Failed to Download Map" error.
-[*] [b]Zoom Levels:[/b] Adds additional zoom levels. Ensure they are enabled in the settings. [i]Caution: excessive zooming out can significantly reduce FPS.[/i]
-[*] [b]Radio Interference:[/b] Completely removes radio interference caused by range limits or adverse weather conditions.
-[*] [b]PlayerCraftHistory (B42 Only):[/b] Server-side patch to prevent bloated player saves by VOIDING crafting history saves.
+[*] [b]Chunk Loading[/b] - Patches the chunk downloader on login to remove timeouts, helping players with slow or unstable connections avoid the "Failed to Download Map" error.
+[*] [b]Zoom Levels[/b] - Adds additional zoom levels. Ensure they are enabled in the settings. [i]Caution: excessive zooming out can significantly reduce FPS.[/i]
+[*] [b]Radio Interference[/b] - Completely removes radio interference caused by range limits or adverse weather conditions.
+[/list]
+
+[h3]B42 Only[/h3]
+[list]
+[*] [b]PlayerCraftHistory[/b] - Server-side patch to prevent bloated player saves by VOIDING crafting history saves.
+[*] [b]RenderLessZombie[/b] - reworked.
+[*] [b]ChunkGridConfig a.k.a BetterFPS[/b] - Vanilla Enabled.
 [/list]
 
 [hr][/hr]
@@ -59,4 +66,4 @@ Since this mod modifies the game's executable JAR file, it requires a manual ste
 [i]Note: You must re-run the patcher if Steam updates the game or verifies files.[/i]
 
 
-Workshop ID: 3657481516
+_____
