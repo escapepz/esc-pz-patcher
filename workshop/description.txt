@@ -4,33 +4,33 @@
 [b]Now requires to be enabled in-game to use certain engine-level methods.[/b]
 
 [h2]Features & Fixes[/h2]
-[b]ESC PZ Patcher[/b] is a technical utility designed to patch Project Zomboid's core Java classes ([b]projectzomboid.jar[/b]). It addresses several engine-level limitations and introduces specific fixes:
 
-[list]
-[*] [b]Chunk Loading[/b] - Patches the chunk downloader on login to remove timeouts, helping players with slow or unstable connections avoid the "Failed to Download Map" error.
-[*] [b]Zoom Levels[/b] - Adds additional zoom levels. Ensure they are enabled in the settings. [i]Caution: excessive zooming out can significantly reduce FPS.[/i]
-[*] [b]Radio Interference[/b] - Completely removes radio interference caused by range limits or adverse weather conditions.
-[/list]
+Designed to patch [b]projectzomboid.jar[/b]
+
+[quote]
+- [b]Chunk Loading[/b] - Avoid the "Failed to Download Map" error. Up to 10 minutes
+- [b]Zoom Levels[/b] - Adds 300,400 zoom levels. [i]Caution: zooming out can significantly reduce FPS.[/i]
+- [b]Radio Interference[/b] - Removes radio noise caused by range / weather conditions.
 
 [h3]B42 Only[/h3]
-[list]
-[*] [b]PlayerCraftHistory[/b] - Server-side patch to prevent bloated player saves by VOIDING crafting history saves.
-[*] [b]RenderLessZombie[/b] - reworked.
-[*] [b]ChunkGridConfig a.k.a BetterFPS[/b] - Vanilla Enabled.
-[/list]
+- [b]PlayerCraftHistory[/b] - Server-side VOIDING crafting history saves.
+- [b]RenderLessZombie[/b] - reworked.
+- [b]ChunkGridConfig a.k.a BetterFPS[/b] - wip.
+[/quote]
 
-[hr][/hr]
 
 [h2]Compatibility[/h2]
 [b]Support:[/b] Windows / Mac / Linux
-[b]Tested on Windows 10[/b]
+[b]Tested on Windows 10[/b].
+[i](B41 version is currently untested)[/i]
+[quote]
+- [b]Windows 10:[/b] 100% Compatible with all versions (Build 1507 to 22H2).
+- [b]Windows 11:[/b] 100% Compatible.
+- [b]Windows 7 / 8.1:[/b] .NET Framework 4.5 or higher and PowerShell 3.0 or higher.
+- [b]Dual Version Store:[/b] [b]Build 42.13.2[/b] and the stable [b]Build 41 (Common)[/b]
+[/quote]
 
-[list]
-[*] [b]Windows 10:[/b] 100% Compatible with all versions (from the initial Build 1507 to the latest 22H2).
-[*] [b]Windows 11:[/b] 100% Compatible.
-[*] [b]Windows 7 / 8.1:[/b] Works only if the user has .NET Framework 4.5 or higher and PowerShell 3.0 or higher installed.
-[*] [b]Dual Version Store:[/b] Includes dedicated patches for both the latest [b]Build 42.13.2[/b] and the stable [b]Build 41 (Common)[/b]. [i](B41 version is currently untested)[/i]
-[/list]
+
 
 [hr][/hr]
 
@@ -65,5 +65,10 @@ Since this mod modifies the game's executable JAR file, it requires a manual ste
 
 [i]Note: You must re-run the patcher if Steam updates the game or verifies files.[/i]
 
-
+[quote]
+[h3]Default Settings[/h3]
+- [b]ChunkGridConfig[/b] : worldChunkMap11x11 (High Perf)
+- [b]RenderLessZombie[/b] : 50
+> Reach my Discord Server for details - https://discord.gg/mQadasYfKA
+[/quote]
 _____
