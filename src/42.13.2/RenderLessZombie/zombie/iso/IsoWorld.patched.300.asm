@@ -10958,31 +10958,22 @@
             invokevirtual zombie/iso/IsoWorld.getMaxRenderCount ()I
             istore maxRender
         AJ: 
-            line 2362
-            getstatic java/lang/System.out Ljava/io/PrintStream;
-            ldc "DEBUG: MaxRenderCount = "
-            iload maxRender
-            invokedynamic makeConcatWithConstants (Ljava/lang/String;I)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "\u0001 \u0001" }
-            getstatic zombie/iso/IsoWorld.defaultMaxRenderCount I
-            invokedynamic makeConcatWithConstants (Ljava/lang/String;I)Ljava/lang/String; { invokestatic, java/lang/invoke/StringConcatFactory.makeConcatWithConstants, (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; } { "\u0001, defaultMaxRenderCount = \u0001" }
-            invokevirtual java/io/PrintStream.println (Ljava/lang/String;)V
-        AK: 
             line 2365
             iload maxRender
-            ifgt AL
-            bipush 50
+            ifgt AK
+            sipush 300
             istore maxRender
-        AL: 
+        AK: 
             line 2850
             iconst_0 
             istore n
-        AM: 
+        AL: 
             iload n
             aload this
             getfield zombie/iso/IsoWorld.zombieWithModel Lzombie/util/list/PZArrayList;
             invokevirtual zombie/util/list/PZArrayList.size ()I
-            if_icmpge BQ
-        AN: 
+            if_icmpge BP
+        AM: 
             line 2851
             aload this
             getfield zombie/iso/IsoWorld.zombieWithModel Lzombie/util/list/PZArrayList;
@@ -10990,65 +10981,65 @@
             invokevirtual zombie/util/list/PZArrayList.get (I)Ljava/lang/Object;
             checkcast zombie/characters/IsoZombie
             astore z
-        AO: 
+        AN: 
             line 2852
             iload tcount
             iload maxRender
-            if_icmpge BM
-        AP: 
+            if_icmpge BL
+        AO: 
             line 2853
             aload z
             getfield zombie/characters/IsoZombie.ghost Z
-            ifeq AR
-        AQ: 
+            ifeq AQ
+        AP: 
             line 2854
-            goto BP
-        AR: 
+            goto BO
+        AQ: 
             line 2857
             iinc count 1
-        AS: 
+        AR: 
             line 2858
             iinc tcount 1
-        AT: 
+        AS: 
             line 2859
             aload z
             iconst_0 
             invokevirtual zombie/characters/IsoZombie.setSceneCulled (Z)V
-        AU: 
+        AT: 
             line 2860
             aload z
             getfield zombie/characters/IsoZombie.legsSprite Lzombie/iso/sprite/IsoSprite;
-            ifnonnull AW
-        AV: 
+            ifnonnull AV
+        AU: 
             line 2861
-            goto BP
-        AW: 
+            goto BO
+        AV: 
             line 2864
             aload z
             getfield zombie/characters/IsoZombie.legsSprite Lzombie/iso/sprite/IsoSprite;
             getfield zombie/iso/sprite/IsoSprite.modelSlot Lzombie/core/skinnedmodel/ModelManager$ModelSlot;
-            ifnonnull AY
-        AX: 
+            ifnonnull AX
+        AW: 
             line 2865
-            goto BP
-        AY: 
+            goto BO
+        AX: 
             line 2867
             iload count
             getstatic zombie/core/PerformanceSettings.zombieAnimationSpeedFalloffCount I
-            if_icmple BB
-        AZ: 
+            if_icmple BA
+        AY: 
             line 2868
             iinc c 1
-        BA: 
+        AZ: 
             line 2869
             iconst_0 
             istore count
-        BB: 
+        BA: 
             line 2871
             iload tcount
             getstatic zombie/core/PerformanceSettings.zombieBonusFullspeedFalloff I
-            if_icmpge BE
-        BC: 
+            if_icmpge BD
+        BB: 
             line 2872
             aload z
             getfield zombie/characters/IsoZombie.legsSprite Lzombie/iso/sprite/IsoSprite;
@@ -11058,12 +11049,12 @@
             getstatic zombie/core/PerformanceSettings.zombieBonusFullspeedFalloff I
             idiv 
             invokevirtual zombie/core/skinnedmodel/model/ModelInstance.setInstanceSkip (I)V
-        BD: 
+        BC: 
             line 2873
             iconst_0 
             istore count
-            goto BF
-        BE: 
+            goto BE
+        BD: 
             line 2875
             aload z
             getfield zombie/characters/IsoZombie.legsSprite Lzombie/iso/sprite/IsoSprite;
@@ -11073,20 +11064,20 @@
             getstatic zombie/core/PerformanceSettings.animationSkip I
             iadd 
             invokevirtual zombie/core/skinnedmodel/model/ModelInstance.setInstanceSkip (I)V
-        BF: 
+        BE: 
             line 2878
             aload z
             getfield zombie/characters/IsoZombie.legsSprite Lzombie/iso/sprite/IsoSprite;
             getfield zombie/iso/sprite/IsoSprite.modelSlot Lzombie/core/skinnedmodel/ModelManager$ModelSlot;
             getfield zombie/core/skinnedmodel/ModelManager$ModelSlot.model Lzombie/core/skinnedmodel/model/ModelInstance;
             getfield zombie/core/skinnedmodel/model/ModelInstance.animPlayer Lzombie/core/skinnedmodel/animation/AnimationPlayer;
-            ifnull BP
-        BG: 
+            ifnull BO
+        BF: 
             line 2879
             iload tcount
             getstatic zombie/core/PerformanceSettings.numberZombiesBlended I
-            if_icmpge BL
-        BH: 
+            if_icmpge BK
+        BG: 
             line 2880
             aload z
             getfield zombie/characters/IsoZombie.legsSprite Lzombie/iso/sprite/IsoSprite;
@@ -11096,28 +11087,28 @@
             aload z
             iconst_0 
             invokevirtual zombie/characters/IsoZombie.isAlphaAndTargetZero (I)Z
-            ifeq BI
+            ifeq BH
             aload z
             iconst_1 
             invokevirtual zombie/characters/IsoZombie.isAlphaAndTargetZero (I)Z
-            ifeq BI
+            ifeq BH
             aload z
             iconst_2 
             invokevirtual zombie/characters/IsoZombie.isAlphaAndTargetZero (I)Z
-            ifeq BI
+            ifeq BH
             aload z
             iconst_3 
             invokevirtual zombie/characters/IsoZombie.isAlphaAndTargetZero (I)Z
-            ifne BJ
-        BI: 
+            ifne BI
+        BH: 
             iconst_1 
-            goto BK
-        BJ: 
+            goto BJ
+        BI: 
             iconst_0 
-        BK: 
+        BJ: 
             putfield zombie/core/skinnedmodel/animation/AnimationPlayer.doBlending Z
-            goto BP
-        BL: 
+            goto BO
+        BK: 
             line 2882
             aload z
             getfield zombie/characters/IsoZombie.legsSprite Lzombie/iso/sprite/IsoSprite;
@@ -11126,38 +11117,38 @@
             getfield zombie/core/skinnedmodel/model/ModelInstance.animPlayer Lzombie/core/skinnedmodel/animation/AnimationPlayer;
             iconst_0 
             putfield zombie/core/skinnedmodel/animation/AnimationPlayer.doBlending Z
-            goto BP
-        BM: 
+            goto BO
+        BL: 
             line 2886
             aload z
             iconst_1 
             invokevirtual zombie/characters/IsoZombie.setSceneCulled (Z)V
-        BN: 
+        BM: 
             line 2887
             aload z
             invokevirtual zombie/characters/IsoZombie.hasAnimationPlayer ()Z
-            ifeq BP
-        BO: 
+            ifeq BO
+        BN: 
             line 2888
             aload z
             invokevirtual zombie/characters/IsoZombie.getAnimationPlayer ()Lzombie/core/skinnedmodel/animation/AnimationPlayer;
             iconst_0 
             putfield zombie/core/skinnedmodel/animation/AnimationPlayer.doBlending Z
-        BP: 
+        BO: 
             line 2850
             iinc n 1
-            goto AM
-        BQ: 
+            goto AL
+        BP: 
             line 2893
             iconst_0 
             istore n
-        BR: 
+        BQ: 
             iload n
             aload this
             getfield zombie/iso/IsoWorld.zombieWithoutModel Lzombie/util/list/PZArrayList;
             invokevirtual zombie/util/list/PZArrayList.size ()I
-            if_icmpge BY
-        BS: 
+            if_icmpge BX
+        BR: 
             line 2894
             aload this
             getfield zombie/iso/IsoWorld.zombieWithoutModel Lzombie/util/list/PZArrayList;
@@ -11165,35 +11156,35 @@
             invokevirtual zombie/util/list/PZArrayList.get (I)Ljava/lang/Object;
             checkcast zombie/characters/IsoZombie
             astore z
-        BT: 
+        BS: 
             line 2895
             aload z
             invokevirtual zombie/characters/IsoZombie.hasActiveModel ()Z
-            ifeq BV
-        BU: 
+            ifeq BU
+        BT: 
             line 2896
             aload z
             iconst_1 
             invokevirtual zombie/characters/IsoZombie.setSceneCulled (Z)V
-        BV: 
+        BU: 
             line 2898
             aload z
             invokevirtual zombie/characters/IsoZombie.hasAnimationPlayer ()Z
-            ifeq BX
-        BW: 
+            ifeq BW
+        BV: 
             line 2899
             aload z
             invokevirtual zombie/characters/IsoZombie.getAnimationPlayer ()Lzombie/core/skinnedmodel/animation/AnimationPlayer;
             iconst_0 
             putfield zombie/core/skinnedmodel/animation/AnimationPlayer.doBlending Z
-        BX: 
+        BW: 
             line 2893
             iinc n 1
-            goto BR
-        BY: 
+            goto BQ
+        BX: 
             line 2902
             return 
-        BZ: 
+        BY: 
         }
     }
 
