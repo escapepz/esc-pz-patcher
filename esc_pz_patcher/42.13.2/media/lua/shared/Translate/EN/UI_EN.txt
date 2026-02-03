@@ -1,6 +1,8 @@
 UI_EN = {
-    UI_optionscreen_showUsername = "Large",
-    UI_options_RenderLessZombies_title = "Zombie Rendering Optimization",
+    UI_options_RenderLessZombies_title = "Zombie Rendering Optimization (RenderLessZombies)",
     UI_options_RenderLessZombieCount = "Maximum Rendered Zombie Count",
     UI_options_RenderLessZombieCount_tooltip = "Set the maximum number of zombies to be rendered. Zombies exceeding this number will not be rendered.<br>Must enter a number, and the change will take effect upon re-entering the save file.",
+    UI_options_ChunkGridConfig_title = "Chunk Grid Width Configuration (BetterFPS)",
+    UI_options_ChunkGridConfig_description = "Select chunk grid size for world rendering. Larger grids = better visibility but lower performance. Changes take effect on NEXT RESTART.",
+    UI_options_ChunkGridConfig_info_description = "Performance: 3x3 = 24 tiles (minimal GPU) | 13x13 = 104 tiles (full render) | Dynamic (Auto-detect for 4K+)",
 }
