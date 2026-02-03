@@ -187,8 +187,7 @@
             line 95
             getstatic zombie/iso/IsoChunkMap.dynamicChunkGridWidth I
             iconst_m1 
-            if_icmpeq SKIP_DYNAMIC
-        // If dynamicChunkGridWidth is set (not -1), use it
+            if_icmpeq B
             getstatic zombie/iso/IsoChunkMap.dynamicChunkGridWidth I
             putstatic zombie/iso/IsoChunkMap.chunkGridWidth I
             getstatic zombie/iso/IsoChunkMap.chunkGridWidth I
@@ -196,102 +195,101 @@
             imul 
             putstatic zombie/iso/IsoChunkMap.chunkWidthInTiles I
             return 
-        SKIP_DYNAMIC: 
-            // Otherwise check debug options
+        B: 
             getstatic zombie/debug/DebugOptions.instance Lzombie/debug/DebugOptions;
             getfield zombie/debug/DebugOptions.worldChunkMap13x13 Lzombie/debug/BooleanDebugOption;
             invokevirtual zombie/debug/BooleanDebugOption.getValue ()Z
-            ifeq E
-        B: 
+            ifeq F
+        C: 
             line 96
             bipush 13
             putstatic zombie/iso/IsoChunkMap.chunkGridWidth I
-        C: 
+        D: 
             line 97
             getstatic zombie/iso/IsoChunkMap.chunkGridWidth I
             bipush 8
             imul 
             putstatic zombie/iso/IsoChunkMap.chunkWidthInTiles I
-        D: 
+        E: 
             line 98
             return 
-        E: 
+        F: 
             line 100
             getstatic zombie/debug/DebugOptions.instance Lzombie/debug/DebugOptions;
             getfield zombie/debug/DebugOptions.worldChunkMap11x11 Lzombie/debug/BooleanDebugOption;
             invokevirtual zombie/debug/BooleanDebugOption.getValue ()Z
-            ifeq I
-        F: 
+            ifeq J
+        G: 
             line 101
             bipush 11
             putstatic zombie/iso/IsoChunkMap.chunkGridWidth I
-        G: 
+        H: 
             line 102
             getstatic zombie/iso/IsoChunkMap.chunkGridWidth I
             bipush 8
             imul 
             putstatic zombie/iso/IsoChunkMap.chunkWidthInTiles I
-        H: 
+        I: 
             line 103
             return 
-        I: 
+        J: 
             line 105
             getstatic zombie/debug/DebugOptions.instance Lzombie/debug/DebugOptions;
             getfield zombie/debug/DebugOptions.worldChunkMap9x9 Lzombie/debug/BooleanDebugOption;
             invokevirtual zombie/debug/BooleanDebugOption.getValue ()Z
-            ifeq M
-        J: 
+            ifeq N
+        K: 
             line 106
             bipush 9
             putstatic zombie/iso/IsoChunkMap.chunkGridWidth I
-        K: 
+        L: 
             line 107
             getstatic zombie/iso/IsoChunkMap.chunkGridWidth I
             bipush 8
             imul 
             putstatic zombie/iso/IsoChunkMap.chunkWidthInTiles I
-        L: 
+        M: 
             line 108
             return 
-        M: 
+        N: 
             line 110
             getstatic zombie/debug/DebugOptions.instance Lzombie/debug/DebugOptions;
             getfield zombie/debug/DebugOptions.worldChunkMap7x7 Lzombie/debug/BooleanDebugOption;
             invokevirtual zombie/debug/BooleanDebugOption.getValue ()Z
-            ifeq Q
-        N: 
+            ifeq R
+        O: 
             line 111
             bipush 7
             putstatic zombie/iso/IsoChunkMap.chunkGridWidth I
-        O: 
+        P: 
             line 112
             getstatic zombie/iso/IsoChunkMap.chunkGridWidth I
             bipush 8
             imul 
             putstatic zombie/iso/IsoChunkMap.chunkWidthInTiles I
-        P: 
+        Q: 
             line 113
             return 
-        Q: 
+        R: 
             line 115
             getstatic zombie/debug/DebugOptions.instance Lzombie/debug/DebugOptions;
             getfield zombie/debug/DebugOptions.worldChunkMap5x5 Lzombie/debug/BooleanDebugOption;
             invokevirtual zombie/debug/BooleanDebugOption.getValue ()Z
-            ifeq U
-        R: 
+            ifeq V
+        S: 
             line 116
             iconst_5 
             putstatic zombie/iso/IsoChunkMap.chunkGridWidth I
-        S: 
+        T: 
             line 117
             getstatic zombie/iso/IsoChunkMap.chunkGridWidth I
             bipush 8
             imul 
             putstatic zombie/iso/IsoChunkMap.chunkWidthInTiles I
-        T: 
+        U: 
             line 118
             return 
-        U: 
+        V: 
             line 121
             invokestatic zombie/core/Core.getInstance ()Lzombie/core/Core;
             invokevirtual zombie/core/Core.getScreenWidth ()I
@@ -299,7 +297,7 @@
             ldc 1920F
             fdiv 
             fstore delx
-        V: 
+        W: 
             line 122
             invokestatic zombie/core/Core.getInstance ()Lzombie/core/Core;
             invokevirtual zombie/core/Core.getScreenHeight ()I
@@ -307,23 +305,23 @@
             ldc 1080F
             fdiv 
             fstore dely
-        W: 
+        X: 
             line 123
             fload delx
             fload dely
             invokestatic java/lang/Math.max (FF)F
             fstore del
-        X: 
+        Y: 
             line 124
             fload del
             fconst_1 
             fcmpl 
-            ifle Z
-        Y: 
+            ifle AA
+        Z: 
             line 125
             fconst_1 
             fstore del
-        Z: 
+        AA: 
             line 127
             ldc 13F
             fload del
@@ -333,7 +331,7 @@
             dmul 
             d2i 
             putstatic zombie/iso/IsoChunkMap.chunkGridWidth I
-        AA: 
+        AB: 
             line 128
             getstatic zombie/iso/IsoChunkMap.chunkGridWidth I
             iconst_2 
@@ -341,65 +339,65 @@
             iconst_2 
             imul 
             getstatic zombie/iso/IsoChunkMap.chunkGridWidth I
-            if_icmpne AC
-        AB: 
+            if_icmpne AD
+        AC: 
             line 129
             getstatic zombie/iso/IsoChunkMap.chunkGridWidth I
             iconst_1 
             iadd 
             putstatic zombie/iso/IsoChunkMap.chunkGridWidth I
-        AC: 
+        AD: 
             line 132
             getstatic zombie/iso/IsoChunkMap.chunkGridWidth I
             bipush 19
             invokestatic zombie/core/math/PZMath.min (II)I
             putstatic zombie/iso/IsoChunkMap.chunkGridWidth I
-        AD: 
+        AE: 
             line 134
             getstatic zombie/iso/IsoChunkMap.chunkGridWidth I
             bipush 8
             imul 
             putstatic zombie/iso/IsoChunkMap.chunkWidthInTiles I
-        AE: 
+        AF: 
             line 135
             return 
-        AF: 
+        AG: 
         }
-        }
+    }
 
-        .method public static setDynamicChunkGridWidth (I)V {
-            parameters: { width },
-            code: {
-            A: 
-                iload width
-                putstatic zombie/iso/IsoChunkMap.dynamicChunkGridWidth I
-            B: 
-                return 
-            C: 
-            }
-        }
-
-        .method public static getDynamicChunkGridWidth ()I {
+    .method public static setDynamicChunkGridWidth (I)V {
+        parameters: { width },
         code: {
         A: 
-           getstatic zombie/iso/IsoChunkMap.dynamicChunkGridWidth I
-           ireturn 
+            iload width
+            putstatic zombie/iso/IsoChunkMap.dynamicChunkGridWidth I
+            invokestatic zombie/iso/IsoChunkMap.CalcChunkWidth ()V
+            return 
         B: 
         }
-        }
+    }
 
-        .method public static resetDynamicChunkGridWidth ()V {
-            code: {
-            A: 
-                iconst_m1 
-                putstatic zombie/iso/IsoChunkMap.dynamicChunkGridWidth I
-            B: 
-                return 
-            C: 
-            }
+    .method public static getDynamicChunkGridWidth ()I {
+        code: {
+        A: 
+            getstatic zombie/iso/IsoChunkMap.dynamicChunkGridWidth I
+            ireturn 
+        B: 
         }
+    }
 
-        .method public static setWorldStartPos (II)V {
+    .method public static resetDynamicChunkGridWidth ()V {
+        code: {
+        A: 
+            iconst_m1 
+            putstatic zombie/iso/IsoChunkMap.dynamicChunkGridWidth I
+            invokestatic zombie/iso/IsoChunkMap.CalcChunkWidth ()V
+            return 
+        B: 
+        }
+    }
+
+    .method public static setWorldStartPos (II)V {
         parameters: { x, y },
         code: {
         A: 

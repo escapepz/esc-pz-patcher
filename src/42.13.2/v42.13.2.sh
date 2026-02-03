@@ -8,6 +8,8 @@ BACKUP_NAME="projectzomboid.jar.bak"
 FILES_TO_PATCH=(
     "zombie/radio/ZomboidRadio.class"
     "zombie/iso/WorldStreamer.class"
+    "zombie/iso/IsoWorld.class"
+    "zombie/iso/IsoChunkMap.class"
     "zombie/core/textures/MultiTextureFBO2.class"
     "zombie/characters/PlayerCraftHistory.class"
 )

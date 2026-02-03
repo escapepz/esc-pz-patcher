@@ -1,6 +1,6 @@
 local patcher = require("esc_pz_patcher/LoadSetting")
 
-local function ExampleConfig()
+local function RenderLessZombieConfig()
 	local options = PZAPI.ModOptions:getOptions("esc_pz_patcher")
 
 	if options == nil then
@@ -21,4 +21,4 @@ local function ExampleConfig()
 	end
 end
 
-ExampleConfig()
+return RenderLessZombieConfig

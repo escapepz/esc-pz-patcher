@@ -1,4 +1,4 @@
--- MyDefensiveMod.lua aka safeLogger.lua
+-- MyDefensiveMod.lua aka SafeLogger.lua
 local hasZUL, ZUL = pcall(require, "ZUL")
 local logger = nil
 local LOG_MODULE_NAME = "esc_pz_patcher"

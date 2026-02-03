@@ -29,6 +29,12 @@ local function ChunkGridConfig()
 	comboBox:addItem("9x9 (Standard)")
 	comboBox:addItem("11x11 (High Performance)")
 	comboBox:addItem("13x13 (Maximum)")
+	comboBox:addItem("15x15 (Ultra)")
+	comboBox:addItem("17x17 (Ultra PRO)")
+	comboBox:addItem("19x19 (Vanilla MAX!)")
+	comboBox:addItem("21x21 (Overkill?!)")
+	comboBox:addItem("23x23 (Madness??!)")
+	comboBox:addItem("25x25 (Legendary???)")
 
 	-- Performance stats info
 	options:addDescription(
@@ -38,8 +44,8 @@ local function ChunkGridConfig()
 
 	-- Apply function - called when player clicks Apply
 	options.apply = function()
-		patcher.setChunkLoadDebugOption()
+		patcher.setDynamicChunkGridWidth()
 	end
 end
 
-ChunkGridConfig()
+return ChunkGridConfig
